@@ -1,0 +1,716 @@
+﻿
+body.login-bg {
+    padding-top: 54px;
+    background-image: url('../img/background.png');
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 100%;
+}
+
+.containertop {
+    display: block;
+    position: absolute;
+    height: auto;
+    bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin-top: 93px;
+}
+
+@media (min-width: 768px) {
+    .container {
+        max-width: 992px;
+    }
+}
+
+@media (min-width: 992px) {
+    .container {
+        max-width: 1200px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1180px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1340px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .container {
+        max-width: 1540px;
+    }
+}
+
+@media (min-width: 1800px) {
+    .container {
+        max-width: 1740px;
+    }
+}
+
+@media (min-width: 1900px) {
+    .container {
+        max-width: 1840px;
+    }
+}
+
+.login {
+    display: inline-block;
+    border-radius: 100px;
+    background-color: #8CCB63;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 350px;
+    height: 50px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 5px;
+}
+    .login:hover {
+        display: inline-block;
+        border-radius: 100px;
+        background-color: #76D23A;
+        border: 2px solid #707070;
+        color: white;
+        text-align: center;
+        font-size: 18px;
+        padding: 5px;
+        width: 350px;
+        height: 50px;
+        transition: all 0.3s;
+        cursor: pointer;
+        margin: 5px;
+    }
+
+.usrlogin {
+    border: none;
+    border-radius: 10px;
+}
+
+.signout-link {
+    text-align: -webkit-match-parent;
+    display: block;
+    padding: .5rem 1rem;
+    padding-right: .5rem;
+    padding-left: .5rem;
+    color: #ff6666;
+}
+
+    .signout-link:hover {
+        color: #ff3333;
+        text-decoration: none;
+    }
+
+.manuser-link {
+    text-align: -webkit-match-parent;
+    display: block;
+    padding: .5rem 1rem;
+    padding-right: .5rem;
+    padding-left: .5rem;
+    color: #fbc45d;
+}
+
+    .manuser-link:hover {
+        color: #fab42f;
+        text-decoration: none;
+    }
+
+.manuser-active {
+    text-align: -webkit-match-parent;
+    display: block;
+    padding: .5rem 1rem;
+    padding-right: .5rem;
+    padding-left: .5rem;
+    color: #faac18;
+}
+
+    .manuser-active:hover {
+        text-decoration: none;
+        color: #faac18;
+    }
+
+.PrepTracker {
+    zoom: 150%;
+    width:200%;
+    height:200%;
+}
+
+.submit {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #8CCB63;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 200px;
+    height: 40px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.modalBackground {
+    background-color: Black;
+    filter: alpha(opacity=90);
+    opacity: 0.8;
+    z-index: 501 !important;
+}
+
+.modalPopup {
+    background-color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    width: 780px;
+    height: 500px;
+    z-index: 502 !important;
+}
+.AddUsermodalPopup {
+    background-color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    width: 500px;
+    height: 350px;
+    z-index: 502 !important;
+}
+.adduser {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #4285F4;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 1px;
+    width: 120px;
+    height: 30px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 2px;
+}
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: black;
+    opacity: 0.8;
+    filter: alpha(opacity=80);
+    min-height: 100%;
+    width: 100%;
+}
+
+.loading {
+    font-size: 18pt;
+    border: none;
+    border-radius: 10px;
+    width: 200px;
+    height: 65px;
+    display: none;
+    position: fixed;
+    background-color: White;
+    z-index: 999;
+    text-indent: -20px;
+}
+.modall {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: black;
+    opacity: 0.8;
+    filter: alpha(opacity=80);
+    min-height: 100%;
+    width: 100%;
+    display: none;
+}
+.loadingg {
+    font-size: 18pt;
+    border: none;
+    border-radius: 10px;
+    width: 200px;
+    height: 65px;
+    display: none;
+    position: fixed;
+    background-color: White;
+    z-index: 999;
+    text-indent: -20px;
+}
+.QAmodalPopup {
+    background-color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    width: 500px;
+    height: 680px;
+    z-index: 502 !important;
+}
+.VEmodalPopup {
+    background-color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    width: 600px;
+    height: 500px;
+    z-index: 502 !important;
+}
+.VCmodalPopup {
+    background-color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px;
+    width: 600px;
+    /*width: 900px;*/
+    height: 500px;
+    z-index: 502 !important;
+}
+.add {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #8CCB63;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 200px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.cancel {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #efd253;
+    border: none;
+    color: black;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 200px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.VEedit {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #5496FF;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 180px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+.VEdelete {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #CB5263;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 180px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+.VEcancel {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #efd253;
+    border: none;
+    color: black;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 180px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+.add:hover {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #76D23A;
+    border: 2px solid #707070;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 200px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.cancel:hover {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #EBC41B;
+    border: 2px solid #707070;
+    color: black;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 200px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.VEedit:hover {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #317EF8;
+    border: 2px solid #707070;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 180px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.VEdelete:hover {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #C93045;
+    border: 2px solid #707070;
+    color: white;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 180px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.VEcancel:hover {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #EBC41B;
+    border: 2px solid #707070;
+    color: black;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    width: 180px;
+    height: 40px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.ddl {
+    border: 2px solid #707070;
+    border-radius: 5px;
+    padding: 2px;
+    /*-webkit-appearance: none;*/
+    background-color: #EBEBEB;
+    /*background-image: url('../img/down.png');
+    background-position: 88px;
+    background-repeat: no-repeat;*/
+    text-indent: 0.01px; /*In Firefox*/
+}
+.re {
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #4285F4;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 15px;
+    padding: 2px;
+    width: 205px;
+    height: 27px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 0px;
+}
+    .re:hover {
+        display: inline-block;
+        border-radius: 10px;
+        background-color: #3871d1;
+        border: none;
+        color: white;
+        text-align: center;
+        font-size: 15px;
+        padding: 2px;
+        width: 205px;
+        height: 27px;
+        transition: all 0.3s;
+        cursor: pointer;
+        margin: 0px;
+    }
+.checkin {
+    display: inline-block;
+    border-radius: 20px;
+    background-color: #8CCB63;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 15px;
+    padding: 4px;
+    width: 130px;
+    height: 35px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 0px;
+}
+    .checkin:hover {
+        display: inline-block;
+        border-radius: 20px;
+        background-color: #76D23A;
+        border: 2px solid #707070;
+        color: white;
+        text-align: center;
+        font-size: 15px;
+        padding: 4px;
+        width: 130px;
+        height: 35px;
+        transition: all 0.3s;
+        cursor: pointer;
+        margin: 0px;
+    }
+    .checkout {
+    display: inline-block;
+    border-radius: 20px;
+    background-color: #F88F07;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 15px;
+    padding: 4px;
+    width: 130px;
+    height: 35px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 0px;
+}
+    .checkout:hover {
+        display: inline-block;
+        border-radius: 20px;
+        background-color: #F86707;
+        border: 2px solid #707070;
+        color: white;
+        text-align: center;
+        font-size: 15px;
+        padding: 4px;
+        width: 130px;
+        height: 35px;
+        transition: all 0.3s;
+        cursor: pointer;
+        margin: 0px;
+    }
+.questionnaire {
+    display: inline-block;
+    border-radius: 20px;
+    background-color: #707070;
+    border: none;
+    color: white;
+    text-align: center;
+    font-size: 15px;
+    padding: 4px;
+    width: 130px;
+    height: 35px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin: 0px;
+}
+
+    .questionnaire:hover {
+        display: inline-block;
+        border-radius: 20px;
+        background-color: Black;
+        border: none;
+        color: white;
+        text-align: center;
+        font-size: 15px;
+        padding: 4px;
+        width: 130px;
+        height: 35px;
+        transition: all 0.3s;
+        cursor: pointer;
+        margin: 0px;
+    }
+.EntryLineHover {
+    cursor: pointer;
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #4DE6FF;
+}
+.EntryLineHover_Outbond {
+    cursor: pointer;
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #FFD60A;
+}
+.EntryLine {
+    cursor: pointer;
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #A2F2FF;
+}
+.EntryLine_Outbond {
+    cursor: pointer;
+    display: inline-block;
+    border-radius: 10px;
+    background-color: #FFE76D;
+}
+.SEntryLine {
+    cursor: pointer;
+    display: inline-block;
+    border-style: solid;
+    border-color: #707070;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #4DE6FF;
+}
+
+.SEntryLine_Outbond {
+    cursor: pointer;
+    display: inline-block;
+    border-style: solid;
+    border-color: #707070;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #FFD60A;
+}
+.LSEntryLine {
+    cursor: pointer;
+    display: inline-block;
+    border-style: solid;
+    border-color: #C80E0E;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #A2F2FF;
+}
+
+.LSEntryLine_Outbond {
+    cursor: pointer;
+    display: inline-block;
+    border-style: solid;
+    border-color: #C80E0E;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #FFE76D;
+}
+.LSEntryLineHover {
+    cursor: pointer;
+    display: inline-block;
+    border-style: solid;
+    border-color: #C80E0E;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #4DE6FF;
+}
+.LSEntryLineHover_Outbond {
+    cursor: pointer;
+    display: inline-block;
+    border-style: solid;
+    border-color: #C80E0E;
+    border-width: 2px;
+    border-radius: 10px;
+    background-color: #FFD60A;
+}
+.AlternatingRowStyle {
+    background-color: #EEE8AA;
+}
+
+.EmptyEvenCell {
+    background-color: #EEE8AA;
+}
+
+.EmptyOddCell {
+    background-color: #FAFAD2;
+}
+.OrderHistory_RowSeparator {
+    margin: 0px 0px -25px 0px;
+}
+.divider {
+    height: 5px;
+    background-color: #E8E8E8;
+    border: none;
+}
+.refresh {
+    display: inline-block;
+    background-image: url('../img/refresh.png');
+    border: none;
+    padding: 5px;
+    width: 31px;
+    height: 31px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 2px;
+}
+.dropdown {
+    position: center;
+    text-align: right;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    text-align: right;
+    /*margin: 0px 40px;*/
+}
+
+    .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+        .dropdown-content a:hover {
+            background-color: #FAAC18;
+            color: white;
+        }
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+.ui-front {
+    z-index: 1100;
+}
+
+.fixed-top {
+    z-index: 500;
+}
