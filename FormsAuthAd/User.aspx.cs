@@ -32,7 +32,7 @@ namespace PrepTracker
             if (!IsPostBack)
             {
                 
-                SqlCommand permiss = new SqlCommand("SELECT COUNT(*) FROM PrepTrackerPermission WHERE Account2000 = '" + Context.User.Identity.Name + "';", conn);
+                SqlCommand permiss = new SqlCommand("SELECT COUNT(*) FROM Permission WHERE Account2000 = '" + Context.User.Identity.Name + "' AND AppName='PrepTracker';", conn);
                 int permiss_count = Convert.ToInt32(permiss.ExecuteScalar());
                 if (permiss_count == 0)
                 {
@@ -42,9 +42,9 @@ namespace PrepTracker
                 else
                 {
                     
-                    SqlCommand comm = new SqlCommand("SELECT Permission FROM PrepTrackerPermission WHERE Account2000 = '" + Context.User.Identity.Name + "';", conn);
+                    SqlCommand comm = new SqlCommand("SELECT Permission FROM Permission WHERE Account2000 = '" + Context.User.Identity.Name + "' AND AppName='PrepTracker';", conn);
                     String Permission = Convert.ToString(comm.ExecuteScalar());
-                    SqlCommand DC_comm = new SqlCommand("SELECT (CASE WHEN x.OfficeID=0 then 'ALL' else y.Office end)'Office' FROM PrepTrackerPermission x LEFT JOIN DC y ON y.OfficeID=x.OfficeID WHERE Account2000 = '" + Context.User.Identity.Name + "';", conn);
+                    SqlCommand DC_comm = new SqlCommand("SELECT (CASE WHEN x.OfficeID=0 then 'ALL' else y.Office end)'Office' FROM Permission x LEFT JOIN DC y ON y.OfficeID=x.OfficeID WHERE Account2000 = '" + Context.User.Identity.Name + "' AND AppName='PrepTracker';", conn);
                     String DC = Convert.ToString(DC_comm.ExecuteScalar());
 
                     Session["DC"] = DC;
@@ -96,7 +96,7 @@ namespace PrepTracker
             
             SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["PrepTrackerConnectionString1"].ConnectionString);
             con.Open();
-            SqlCommand cmd = new SqlCommand("SELECT x.Account,x.Account2000,x.Permission,x.OfficeID,(CASE WHEN x.OfficeID=0 then 'ALL' else y.Office end)'Office',x.LastLogin FROM PrepTrackerPermission x LEFT JOIN DC y ON y.OfficeID=x.OfficeID WHERE x.OfficeID=" + DC + " OR x.OfficeID=0 ORDER BY Permission;", con);
+            SqlCommand cmd = new SqlCommand("SELECT x.Account,x.Account2000,x.Permission,x.OfficeID,(CASE WHEN x.OfficeID=0 then 'ALL' else y.Office end)'Office',x.LastLogin FROM Permission x LEFT JOIN DC y ON y.OfficeID=x.OfficeID WHERE (x.OfficeID=" + DC + " OR x.OfficeID=0) AND AppName='PrepTracker' ORDER BY Permission;", con);
             SqlDataAdapter da = new SqlDataAdapter(cmd);
             DataTable dt = new DataTable();
             da.Fill(dt);
@@ -153,7 +153,7 @@ namespace PrepTracker
             //    }
             //}
             
-            SqlCommand comme = new SqlCommand("UPDATE PrepTrackerPermission SET Permission='" + ddleditPermission + "', OfficeID=" + ddleditOffice + " WHERE Account='" + lblAccount + "';", conn);
+            SqlCommand comme = new SqlCommand("UPDATE Permission SET Permission='" + ddleditPermission + "', OfficeID=" + ddleditOffice + " WHERE Account='" + lblAccount + "' AND AppName='PrepTracker';", conn);
             comme.ExecuteNonQuery();
             
             //SqlCommand Log_comme = new SqlCommand("INSERT INTO Logs (Date,Type,Modification,ModifiedBy) VALUES ('" + DateTime.Now + "', 'UPDATE USER',  'Updated user [" + lblAccount + "] to Permission=" + ddleditPermission + ", Office=" + ddleditOffice + ", Team=" + ddleditTeam + "', '" + Context.User.Identity.Name + "')", conn);
@@ -173,7 +173,7 @@ namespace PrepTracker
             SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["PrepTrackerConnectionString1"].ConnectionString);
             conn.Open();
             
-            SqlCommand comme = new SqlCommand("DELETE FROM PrepTrackerPermission WHERE Account='" + lblAccount + "';", conn);
+            SqlCommand comme = new SqlCommand("DELETE FROM Permission WHERE Account='" + lblAccount + "' AND AppName='PrepTracker';", conn);
             comme.ExecuteNonQuery();
                 //SqlCommand Log_comme = new SqlCommand("INSERT INTO Logs (Date,Type,Modification,ModifiedBy) VALUES ('" + DateTime.Now + "', 'REMOVE USER',  'Removed user [" + lblAccount + "]', '" + Context.User.Identity.Name + "')", conn);
                 //Log_comme.ExecuteNonQuery();
@@ -321,7 +321,7 @@ namespace PrepTracker
                 conn.Open();
             if (Pass == true)
             {
-                SqlCommand account_comm = new SqlCommand("Select Count(*) FROM PrepTrackerPermission WHERE Account = '" + username.Text + "';", conn);
+                SqlCommand account_comm = new SqlCommand("Select Count(*) FROM Permission WHERE Account = '" + username.Text + "' AND AppName='PrepTracker';", conn);
                 int account = Convert.ToInt32(account_comm.ExecuteScalar());
 
                 if (account > 0)
@@ -347,7 +347,7 @@ namespace PrepTracker
                     user2000 = un;
                 }
 
-                SqlCommand comm = new SqlCommand("INSERT INTO PrepTrackerPermission (Account,Account2000,Permission,OfficeID) VALUES ('" + un + "', '" + user2000 + "', '" + ddlPermission.SelectedItem + "', '" + ddlDC.SelectedValue + "')", conn);
+                SqlCommand comm = new SqlCommand("INSERT INTO Permission (AppName,Account,Account2000,Permission,OfficeID) VALUES ('PrepTracker','" + un + "', '" + user2000 + "', '" + ddlPermission.SelectedItem + "', '" + ddlDC.SelectedValue + "')", conn);
                 comm.ExecuteNonQuery();
                 //SqlCommand Log_comme = new SqlCommand("INSERT INTO Logs (Date,Type,Modification,ModifiedBy) VALUES ('" + DateTime.Now + "', 'ADD USER',  'Added user [" + un + "] to Permission=" + ddlPermission.SelectedItem + ", Office=" + ddlDC.SelectedItem + ", Team=" + Team + "', '" + Context.User.Identity.Name + "')", conn);
                 //Log_comme.ExecuteNonQuery();

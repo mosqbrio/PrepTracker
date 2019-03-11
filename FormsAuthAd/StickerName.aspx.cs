@@ -30,7 +30,7 @@ namespace PrepTracker
             if (!IsPostBack)
             {
                 
-                SqlCommand permiss = new SqlCommand("SELECT COUNT(*) FROM PrepTrackerPermission WHERE Account2000 = '" + Context.User.Identity.Name + "';", conn);
+                SqlCommand permiss = new SqlCommand("SELECT COUNT(*) FROM Permission WHERE Account2000 = '" + Context.User.Identity.Name + "' AND AppName='PrepTracker';", conn);
                 int permiss_count = Convert.ToInt32(permiss.ExecuteScalar());
                 if (permiss_count == 0)
                 {
@@ -40,9 +40,9 @@ namespace PrepTracker
                 else
                 {
                     
-                    SqlCommand comm = new SqlCommand("SELECT Permission FROM PrepTrackerPermission WHERE Account2000 = '" + Context.User.Identity.Name + "';", conn);
+                    SqlCommand comm = new SqlCommand("SELECT Permission FROM Permission WHERE Account2000 = '" + Context.User.Identity.Name + "' AND AppName='PrepTracker';", conn);
                     String Permission = Convert.ToString(comm.ExecuteScalar());
-                    SqlCommand DC_comm = new SqlCommand("SELECT (CASE WHEN x.OfficeID=0 then 'ALL' else y.Office end)'Office' FROM PrepTrackerPermission x LEFT JOIN DC y ON y.OfficeID=x.OfficeID WHERE Account2000 = '" + Context.User.Identity.Name + "';", conn);
+                    SqlCommand DC_comm = new SqlCommand("SELECT (CASE WHEN x.OfficeID=0 then 'ALL' else y.Office end)'Office' FROM Permission x LEFT JOIN DC y ON y.OfficeID=x.OfficeID WHERE Account2000 = '" + Context.User.Identity.Name + "' AND AppName='PrepTracker';", conn);
                     String DC = Convert.ToString(DC_comm.ExecuteScalar());
 
                     Session["DC"] = DC;
