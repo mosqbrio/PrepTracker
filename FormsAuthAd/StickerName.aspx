@@ -159,6 +159,13 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         </ItemTemplate>
                         <HeaderStyle Width="500px"></HeaderStyle><ItemStyle Width="500px"></ItemStyle>
                     </asp:TemplateField>
+
+                    <asp:TemplateField HeaderText="Expiration" SortExpression="Expiration">
+                        <ItemTemplate>
+                            <asp:Label runat="server" Text='<%# Eval("Exp", "{0:MM/dd/yyyy}") %>' ID="lblExp"></asp:Label>
+                        </ItemTemplate>
+                        <HeaderStyle Width="150px"></HeaderStyle><ItemStyle Width="150px"></ItemStyle>
+                    </asp:TemplateField>
                 </Columns>
 
                 <EditRowStyle BackColor="#9fed8e" />

@@ -138,6 +138,13 @@ Date Date,
 Qty int,
 Meal varchar(50)
 )
+DECLARE @Exp TABLE (
+Item varchar(255),
+Decpt varchar(255),
+Date Date,
+Qty int,
+Meal varchar(50)
+)
 
 INSERT INTO #Sub
 SELECT No_,'',@date,SUM(Quantity)'Qty',''
@@ -168,6 +175,12 @@ INSERT INTO #Temp
 SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
 WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
+
+--GET ADDON CHILD
+INSERT INTO @Exp
+SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
+FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
+WHERE x.[Production BOM No_]=@item AND ([Production BOM No_] LIKE 'K%' OR [Production BOM No_] LIKE 'Z%') AND (x.No_ LIKE '3%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
 
 DELETE FROM #Output WHERE Item=@item AND Date=@pdate
 END
@@ -247,10 +260,21 @@ DELETE FROM #Final WHERE Item=@item AND Allergen LIKE LEFT(@allg,2)+'%'
 END
 END
 
-SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM #Final2 y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL) 'Allergen'
+DECLARE @Exp2 TABLE(
+Item varchar(255),
+Decpt varchar(255),
+StickerName varchar(255),
+Allergen varchar(500)
+)
+INSERT INTO @Exp2
+SELECT Item,([Description]+[Description 2]),[Sticker Name],'Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM #Final2 y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)
 FROM #Final2 x
 LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
-GROUP BY Item,Decpt,[Sticker Name],Description,[Description 2]
+GROUP BY Item,Decpt,[Sticker Name],[Description],[Description 2]
+
+SELECT x.Item, x.Decpt, StickerName, Allergen, (CASE WHEN y.Date IS NOT NULL THEN DATEADD(DAY,8,y.Date) ELSE NULL END)'Exp'
+FROM @Exp2 x
+LEFT JOIN @Exp y ON y.Item=x.Item
 DROP TABLE #Sub
 DROP TABLE #Output
 DROP TABLE #Temp
@@ -276,6 +300,13 @@ Qty int,
 Meal varchar(50)
 )
 CREATE TABLE #Sub (
+Item varchar(255),
+Decpt varchar(255),
+Date Date,
+Qty int,
+Meal varchar(50)
+)
+DECLARE @Exp TABLE (
 Item varchar(255),
 Decpt varchar(255),
 Date Date,
@@ -311,6 +342,12 @@ INSERT INTO #Temp
 SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
 WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
+
+--GET ADDON CHILD
+INSERT INTO @Exp
+SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
+FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
+WHERE x.[Production BOM No_]=@item AND ([Production BOM No_] LIKE 'K%' OR [Production BOM No_] LIKE 'Z%') AND (x.No_ LIKE '3%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
 
 DELETE FROM #Output WHERE Item=@item AND Date=@pdate
 END
@@ -387,11 +424,21 @@ SELECT @item,@des,RTRIM(@prefix)+' ('+STUFF((SELECT ', ' + CAST((SELECT SUBSTRIN
 DELETE FROM #Final WHERE Item=@item AND Allergen LIKE LEFT(@allg,2)+'%'
 END
 END
-
-SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM #Final2 y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL) 'Allergen'
+DECLARE @Exp2 TABLE(
+Item varchar(255),
+Decpt varchar(255),
+StickerName varchar(255),
+Allergen varchar(500)
+)
+INSERT INTO @Exp2
+SELECT Item,([Description]+[Description 2]),[Sticker Name],'Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM #Final2 y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)
 FROM #Final2 x
 LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
 GROUP BY Item,Decpt,[Sticker Name],[Description],[Description 2]
+
+SELECT x.Item, x.Decpt, StickerName, Allergen, (CASE WHEN y.Date IS NOT NULL THEN DATEADD(DAY,8,y.Date) ELSE NULL END)'Exp'
+FROM @Exp2 x
+LEFT JOIN @Exp y ON y.Item=x.Item
 DROP TABLE #Sub
 DROP TABLE #Output
 DROP TABLE #Temp
@@ -416,7 +463,7 @@ DROP TABLE #Final2";
             GridView1.DataBind();
             con.Close();
 
-            ScriptManager.RegisterStartupScript(Page, this.GetType(), "Key", "<script>MakeStaticHeader('" + GridView1.ClientID + "', 760, 1555, 32 ,false); </script>", false);
+            ScriptManager.RegisterStartupScript(Page, this.GetType(), "Key", "<script>MakeStaticHeader('" + GridView1.ClientID + "', 760, 1705, 32 ,false); </script>", false);
         }
 
         protected void ddlCycle_SelectedIndexChanged(object sender, EventArgs e)
