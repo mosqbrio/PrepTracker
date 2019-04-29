@@ -117,9 +117,9 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
             <asp:DropDownList ID="ddlDC" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlDC_SelectedIndexChanged">
             </asp:DropDownList>
             <asp:DropDownList ID="ddlItem" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlItem_SelectedIndexChanged">
-                <asp:ListItem Value="Item LIKE '3%'">WIP</asp:ListItem>
-                <asp:ListItem Value="Item LIKE '6%'">Bag</asp:ListItem>
-                <asp:ListItem Value="LEN(Item) = 4">Meal</asp:ListItem>
+                <asp:ListItem Value="Item NOT LIKE '3%'">WIP</asp:ListItem>
+                <asp:ListItem Value="Item  NOT LIKE '6%'">Bag</asp:ListItem>
+                <asp:ListItem Value="LEN(Item) != 4">Meal</asp:ListItem>
             </asp:DropDownList>
             <asp:Label ID="lblSource" runat="server"></asp:Label>
     <div id="DivRoot" align="left">
@@ -162,7 +162,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
 
                     <asp:TemplateField HeaderText="Expiration" SortExpression="Expiration">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Eval("Exp", "{0:MM/dd/yyyy}") %>' ID="lblExp"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Exp") %>' ID="lblExp"></asp:Label>
                         </ItemTemplate>
                         <HeaderStyle Width="150px"></HeaderStyle><ItemStyle Width="150px"></ItemStyle>
                     </asp:TemplateField>

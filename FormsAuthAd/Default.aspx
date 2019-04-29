@@ -123,6 +123,8 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
             <asp:DropDownList ID="ddlItem" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlItem_SelectedIndexChanged">
                 <asp:ListItem Value="3%">WIP</asp:ListItem>
                 <asp:ListItem Value="1%">DROP</asp:ListItem>
+                <asp:ListItem Value="2%">Sauce</asp:ListItem>
+                <asp:ListItem Value="4%">Cooked Sauce</asp:ListItem>
                 <asp:ListItem Value="6%">Meal</asp:ListItem>
             </asp:DropDownList>
             <asp:Label ID="lblSource" runat="server"></asp:Label>
@@ -161,7 +163,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                             <asp:Label ID="lblTotalFriNeeded" runat="server"></asp:Label>
                         </FooterTemplate>
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Fri") %>' ID="lblFriNeeded"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Fri", "{0:0.###}") %>' ID="lblFriNeeded"></asp:Label>
                         </ItemTemplate>
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
@@ -188,7 +190,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Needed" SortExpression="SatNeeded">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Sat") %>' ID="lblSatNeeded"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Sat","{0:0.###}") %>' ID="lblSatNeeded"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
                             <asp:Label ID="lblTotalSatNeeded" runat="server"></asp:Label>
@@ -218,7 +220,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Needed" SortExpression="SunNeeded">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Sun") %>' ID="lblSunNeeded"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Sun","{0:0.###}") %>' ID="lblSunNeeded"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
                             <asp:Label ID="lblTotalSunNeeded" runat="server"></asp:Label>
@@ -248,7 +250,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Needed" SortExpression="MonNeeded">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Mon") %>' ID="lblMonNeeded"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Mon","{0:0.###}") %>' ID="lblMonNeeded"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
                             <asp:Label ID="lblTotalMonNeeded" runat="server"></asp:Label>
@@ -278,7 +280,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Needed" SortExpression="TueNeeded">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Tue") %>' ID="lblTueNeeded"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Tue","{0:0.###}") %>' ID="lblTueNeeded"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
                             <asp:Label ID="lblTotalTueNeeded" runat="server"></asp:Label>
@@ -308,7 +310,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Needed" SortExpression="WedNeeded">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Wed") %>' ID="lblWedNeeded"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Wed","{0:0.###}") %>' ID="lblWedNeeded"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
                             <asp:Label ID="lblTotalWedNeeded" runat="server"></asp:Label>
@@ -338,7 +340,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Demand" SortExpression="Total">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Total") %>' ID="lblTotal"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("Total","{0:0.###}") %>' ID="lblTotal"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
                             <asp:Label ID="lblTotalDemand" runat="server"></asp:Label>
@@ -348,21 +350,21 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="On Hand" SortExpression="OnHand">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("OnHand") %>' ID="lblTotalOnHand"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("OnHand","{0:0.###}") %>' ID="lblTotalOnHand"></asp:Label>
                         </ItemTemplate>
                         <HeaderStyle Width="75px"></HeaderStyle><ItemStyle Width="75px"></ItemStyle>
                         <FooterStyle Width="75px" />
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="Demand" SortExpression="Committed">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("rsved") %>' ID="lblCommitted"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("rsved","{0:0.###}") %>' ID="lblCommitted"></asp:Label>
                         </ItemTemplate>
                         <HeaderStyle Width="95px"></HeaderStyle><ItemStyle Width="95px"></ItemStyle>
                         <FooterStyle Width="95px" />
                     </asp:TemplateField>
                     <asp:TemplateField HeaderText="On Prod." SortExpression="InProd">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("OnProd") %>' ID="lblInProd"></asp:Label>
+                            <asp:Label runat="server" Text='<%# Eval("OnProd","{0:0.###}") %>' ID="lblInProd"></asp:Label>
                         </ItemTemplate>
                         <HeaderStyle Width="95px"></HeaderStyle><ItemStyle Width="95px"></ItemStyle>
                         <FooterStyle Width="95px" />

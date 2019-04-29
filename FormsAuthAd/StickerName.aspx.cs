@@ -118,332 +118,177 @@ namespace PrepTracker
                 lblSource.Text = "Source: Web Order";
                 sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
                                 DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
-CREATE TABLE #Output (
-Item varchar(255),
-Decpt varchar(255),
+DECLARE @ORDER TABLE(
+Item varchar(25),
 Date Date,
-Qty int
+Exp bigint,
+Level int
 )
-CREATE TABLE #Temp (
-Item varchar(255),
-Decpt varchar(255),
+DECLARE @STKU TABLE(
+Item varchar(25),
 Date Date,
-Qty int,
-Meal varchar(50)
+Exp bigint
+--,Code varchar(50)
 )
-CREATE TABLE #Sub (
-Item varchar(255),
-Decpt varchar(255),
-Date Date,
-Qty int,
-Meal varchar(50)
-)
-DECLARE @Exp TABLE (
-Item varchar(255),
-Decpt varchar(255),
-Date Date,
-Qty int,
-Meal varchar(50)
+DECLARE @Final TABLE (
+Item varchar(25),
+Exp varchar(10),
+Allergen varchar(255),
+Processed bigint
 )
 
-INSERT INTO #Sub
-SELECT No_,'',@date,SUM(Quantity)'Qty',''
+INSERT INTO @ORDER
+SELECT No_,[Shipment Date],(CASE WHEN No_ LIKE 'K%' OR No_ LIKE 'Z%' THEN 1 ELSE 0 END),0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
 WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
-GROUP BY No_
+GROUP BY No_,[Shipment Date]
 
-INSERT INTO #Output
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-FROM #Sub x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Sub
-
-DECLARE @item VARCHAR(50)
-DECLARE @meal VARCHAR(50)
-DECLARE @pdate Date
-DECLARE @qty int
-DECLARE @hand int
-
-While (Select Count(*) From #Output) > 0
+--EXPLORE THE BOM
+DECLARE @level int = 0
+While (Select Count(*) From @ORDER WHERE Level=@level) > 0
 Begin
-Select Top 1 @item = Item From #Output
-Select Top 1 @pdate = Date From #Output
-Select Top 1 @qty = Qty From #Output
-
-INSERT INTO #Temp
-SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
---GET ADDON CHILD
-INSERT INTO @Exp
-SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-WHERE x.[Production BOM No_]=@item AND ([Production BOM No_] LIKE 'K%' OR [Production BOM No_] LIKE 'Z%') AND (x.No_ LIKE '3%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-DELETE FROM #Output WHERE Item=@item AND Date=@pdate
+	DELETE FROM @STKU
+	INSERT INTO @STKU
+	SELECT (CASE WHEN (y.[Production BOM No_]='' OR y.[Production BOM No_] IS NULL) THEN x.Item ELSE y.[Production BOM No_] END),Date,Exp--,z.[Item Category Code] 
+	FROM @ORDER x
+	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item AND y.[Location Code]=@location
+	--LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] z ON z.No_=x.Item
+	WHERE Level=@level	
+	GROUP BY x.Item,y.[Production BOM No_],Date,Exp--,z.[Item Category Code]
+	INSERT INTO @ORDER
+	SELECT x.[No_],z.Date,z.Exp,(@level+1)
+	FROM @STKU z
+	INNER JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x ON x.[Production BOM No_]=Item 
+	WHERE (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '8%') 
+	AND ((x.[Starting Date]<=z.Date AND x.[Ending Date]>=z.Date) OR (x.[Starting Date]<=z.Date AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=z.Date))
+	GROUP BY x.No_,[Quantity per],z.Date,z.Exp
+	SET @level=@level+1
 END
 
-INSERT INTO #Output
-SELECT Item,Decpt,Date,Qty
-FROM #Temp
+DELETE FROM @ORDER WHERE Item LIKE '8%' OR " + ddlItem.Text + @"
 
-DELETE FROM #Temp WHERE Item NOT LIKE '6%'
+;WITH ITEMEXP AS(SELECT Item,MAX(Exp)'EXP' FROM @ORDER GROUP BY Item)
+INSERT INTO @Final
+SELECT Item,(CASE WHEN EXP=1 AND Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) ELSE '' END),[Allergen Code],0
+FROM ITEMEXP
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item
 
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-Select Top 1 @item = Item From #Sub
-Select Top 1 @pdate = Date From #Sub
-Select Top 1 @qty = Qty From #Sub
-Select Top 1 @meal = Meal From #Sub
-
-INSERT INTO #Output
-SELECT x.[No_],'',@pdate,[Quantity per]*@qty
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
-END
-CREATE TABLE #Final (
-Item varchar(255),
-Decpt varchar(255),
-Allergen varchar(255)
-)
-CREATE TABLE #Final2 (
-Item varchar(255),
-Decpt varchar(255),
-Allergen varchar(255)
-)
-
-INSERT INTO #Output
-SELECT No_,'',@date,SUM(Quantity)'Qty'
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-WHERE LEN(No_)=4 AND [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
-GROUP BY No_
-
-INSERT INTO #Final
-SELECT Item,Decpt,[Allergen Code]
-FROM #Output
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item COLLATE DATABASE_DEFAULT
-WHERE " + ddlItem.Text + @"
-GROUP BY Item,Decpt,[Allergen Code]
-
-DECLARE @des VARCHAR(255)
+DECLARE @item VARCHAR(25)
+DECLARE @expdate VARCHAR(10)
 DECLARE @allg VARCHAR(10)
-DECLARE @prefix VARCHAR(255)
-While (Select Count(*) From #Final) > 0
+DECLARE @prefix VARCHAR(50)
+While (Select Count(*) From @Final WHERE Processed=0) > 0
 BEGIN
-Select Top 1 @item = Item From #Final
-Select Top 1 @des = Decpt From #Final
-Select Top 1 @allg = Allergen From #Final
-IF (Select Count(*) From #Final WHERE Item=@item AND (Allergen LIKE LEFT(@allg,2)+'%' OR Allergen IS NULL)) = 1
-BEGIN
-INSERT INTO #Final2 Values(@item,@des,(SELECT [Description] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] WHERE [Code]=@allg))
-DELETE FROM #Final WHERE Item=@item AND (Allergen=@allg OR Allergen IS NULL)
+	Select Top 1 @item = Item From @Final WHERE Processed=0
+	Select Top 1 @expdate = Exp From @Final WHERE Processed=0
+	Select Top 1 @allg = Allergen From @Final WHERE Processed=0
+	IF (Select Count(*) From @Final WHERE Item=@item AND Processed=0 AND (Allergen LIKE LEFT(@allg,2)+'%' OR Allergen IS NULL)) = 1
+	BEGIN
+		UPDATE @Final SET Processed=1, Allergen=(SELECT [Description] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] WHERE [Code]=@allg)
+		WHERE Item=@item AND (Allergen=@allg OR Allergen IS NULL)
+	END
+	ELSE
+	BEGIN
+		DELETE FROM @Final WHERE Item=@item AND Allergen=LEFT(@allg,2)
+		Select Top 1 @prefix = SUBSTRING([Description],0, CHARINDEX('(',[Description])) From @Final LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] ON Code=Allergen COLLATE DATABASE_DEFAULT WHERE Allergen LIKE LEFT(@allg,2)+'%'
+		INSERT INTO @Final
+		SELECT @item,@expdate,RTRIM(@prefix)+' ('+STUFF((SELECT ', ' + CAST((SELECT SUBSTRING([Description],CHARINDEX('(',[Description])+1, CHARINDEX(')',[Description],CHARINDEX('(',[Description])+1)-CHARINDEX('(',[Description])-1)) AS VARCHAR(80)) AS [text()] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] LEFT JOIN @Final ON Allergen=Code COLLATE DATABASE_DEFAULT  WHERE Allergen LIKE LEFT(@allg,2)+'%' AND Item=@item FOR XML PATH('')), 1, 2, NULL)+')',1
+		DELETE FROM @Final WHERE Item=@item AND Allergen LIKE LEFT(@allg,2)+'%' AND Processed=0
+	END
 END
-ELSE
-BEGIN
-DELETE FROM #Final WHERE Item=@item AND Allergen=LEFT(@allg,2)
-Select Top 1 @prefix = SUBSTRING([Description],0, CHARINDEX('(',[Description])) From #Final LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] ON Code=Allergen COLLATE DATABASE_DEFAULT WHERE Allergen LIKE LEFT(@allg,2)+'%'
 
-INSERT INTO #Final2
-SELECT @item,@des,RTRIM(@prefix)+' ('+STUFF((SELECT ', ' + CAST((SELECT SUBSTRING([Description],CHARINDEX('(',[Description])+1, CHARINDEX(')',[Description],CHARINDEX('(',[Description])+1)-CHARINDEX('(',[Description])-1)) AS VARCHAR(80)) AS [text()] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] LEFT JOIN #Final ON Allergen=Code COLLATE DATABASE_DEFAULT  WHERE Allergen LIKE LEFT(@allg,2)+'%' AND Item=@item FOR XML PATH('')), 1, 2, NULL)+')'
-DELETE FROM #Final WHERE Item=@item AND Allergen LIKE LEFT(@allg,2)+'%'
-END
-END
-
-DECLARE @Exp2 TABLE(
-Item varchar(255),
-Decpt varchar(255),
-StickerName varchar(255),
-Allergen varchar(500)
-)
-INSERT INTO @Exp2
-SELECT Item,([Description]+[Description 2]),[Sticker Name],'Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM #Final2 y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)
-FROM #Final2 x
+SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp
+FROM @Final x
 LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
-GROUP BY Item,Decpt,[Sticker Name],[Description],[Description 2]
-
-SELECT x.Item, x.Decpt, StickerName, Allergen, (CASE WHEN y.Date IS NOT NULL THEN DATEADD(DAY,8,y.Date) ELSE NULL END)'Exp'
-FROM @Exp2 x
-LEFT JOIN @Exp y ON y.Item=x.Item
-DROP TABLE #Sub
-DROP TABLE #Output
-DROP TABLE #Temp
-DROP TABLE #Final
-DROP TABLE #Final2";
+GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
             }
             else
             {
                 lblSource.Text = "Source: Forecast";
                 sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
                                 DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
-CREATE TABLE #Output (
-Item varchar(255),
-Decpt varchar(255),
+DECLARE @ORDER TABLE(
+Item varchar(25),
 Date Date,
-Qty int
+Exp bigint,
+Level int
 )
-CREATE TABLE #Temp (
-Item varchar(255),
-Decpt varchar(255),
+DECLARE @STKU TABLE(
+Item varchar(25),
 Date Date,
-Qty int,
-Meal varchar(50)
+Exp bigint
+--,Code varchar(50)
 )
-CREATE TABLE #Sub (
-Item varchar(255),
-Decpt varchar(255),
-Date Date,
-Qty int,
-Meal varchar(50)
+DECLARE @Final TABLE (
+Item varchar(25),
+Exp varchar(10),
+Allergen varchar(255),
+Processed bigint
 )
-DECLARE @Exp TABLE (
-Item varchar(255),
-Decpt varchar(255),
-Date Date,
-Qty int,
-Meal varchar(50)
-)
-INSERT INTO #Sub
-SELECT [Item No_],'',@date,SUM([Forecast Quantity]),''
+
+INSERT INTO @ORDER
+SELECT [Item No_],[Forecast Date],(CASE WHEN [Item No_] LIKE 'K%' OR [Item No_] LIKE 'Z%' THEN 1 ELSE 0 END),0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
 WHERE [Forecast Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND [Location Code]=@location
-GROUP BY [Item No_]
 
-INSERT INTO #Output
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-FROM #Sub x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Sub
-
-DECLARE @item VARCHAR(50)
-DECLARE @meal VARCHAR(50)
-DECLARE @pdate Date
-DECLARE @qty int
-DECLARE @hand int
-
-While (Select Count(*) From #Output) > 0
+--EXPLORE THE BOM
+DECLARE @level int = 0
+While (Select Count(*) From @ORDER WHERE Level=@level) > 0
 Begin
-Select Top 1 @item = Item From #Output
-Select Top 1 @pdate = Date From #Output
-Select Top 1 @qty = Qty From #Output
-
-INSERT INTO #Temp
-SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
---GET ADDON CHILD
-INSERT INTO @Exp
-SELECT x.[No_],'',@pdate,[Quantity per]*@qty,@item
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-WHERE x.[Production BOM No_]=@item AND ([Production BOM No_] LIKE 'K%' OR [Production BOM No_] LIKE 'Z%') AND (x.No_ LIKE '3%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-DELETE FROM #Output WHERE Item=@item AND Date=@pdate
+	DELETE FROM @STKU
+	INSERT INTO @STKU
+	SELECT (CASE WHEN (y.[Production BOM No_]='' OR y.[Production BOM No_] IS NULL) THEN x.Item ELSE y.[Production BOM No_] END),Date,Exp--,z.[Item Category Code] 
+	FROM @ORDER x
+	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item AND y.[Location Code]=@location
+	--LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] z ON z.No_=x.Item
+	WHERE Level=@level	
+	GROUP BY x.Item,y.[Production BOM No_],Date,Exp--,z.[Item Category Code]
+	INSERT INTO @ORDER
+	SELECT x.[No_],z.Date,z.Exp,(@level+1)
+	FROM @STKU z
+	INNER JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x ON x.[Production BOM No_]=Item 
+	WHERE (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '8%') 
+	AND ((x.[Starting Date]<=z.Date AND x.[Ending Date]>=z.Date) OR (x.[Starting Date]<=z.Date AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=z.Date))
+	GROUP BY x.No_,[Quantity per],z.Date,z.Exp
+	SET @level=@level+1
 END
 
-INSERT INTO #Output
-SELECT Item,Decpt,Date,Qty
-FROM #Temp
+DELETE FROM @ORDER WHERE Item LIKE '8%' OR " + ddlItem.Text + @"
 
-DELETE FROM #Temp WHERE Item NOT LIKE '6%'
+;WITH ITEMEXP AS(SELECT Item,MAX(Exp)'EXP' FROM @ORDER GROUP BY Item)
+INSERT INTO @Final
+SELECT Item,(CASE WHEN EXP=1 AND Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) ELSE '' END),[Allergen Code],0
+FROM ITEMEXP
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item
 
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-Select Top 1 @item = Item From #Sub
-Select Top 1 @pdate = Date From #Sub
-Select Top 1 @qty = Qty From #Sub
-Select Top 1 @meal = Meal From #Sub
-
-INSERT INTO #Output
-SELECT x.[No_],'',@pdate,[Quantity per]*@qty
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
-END
-CREATE TABLE #Final (
-Item varchar(255),
-Decpt varchar(255),
-Allergen varchar(255)
-)
-CREATE TABLE #Final2 (
-Item varchar(255),
-Decpt varchar(255),
-Allergen varchar(255)
-)
-INSERT INTO #Output
-SELECT [Item No_],'',@date,SUM([Forecast Quantity])
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
-WHERE LEN([Item No_])=4 AND [Forecast Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND [Location Code]=@location
-GROUP BY [Item No_]
-
-INSERT INTO #Final
-SELECT Item,Decpt,[Allergen Code]
-FROM #Output
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item COLLATE DATABASE_DEFAULT
-WHERE " + ddlItem.Text + @"
-GROUP BY Item,Decpt,[Allergen Code]
-
-DECLARE @des VARCHAR(255)
+DECLARE @item VARCHAR(25)
+DECLARE @expdate VARCHAR(10)
 DECLARE @allg VARCHAR(10)
-DECLARE @prefix VARCHAR(255)
-While (Select Count(*) From #Final) > 0
+DECLARE @prefix VARCHAR(50)
+While (Select Count(*) From @Final WHERE Processed=0) > 0
 BEGIN
-Select Top 1 @item = Item From #Final
-Select Top 1 @des = Decpt From #Final
-Select Top 1 @allg = Allergen From #Final
-IF (Select Count(*) From #Final WHERE Item=@item AND (Allergen LIKE LEFT(@allg,2)+'%' OR Allergen IS NULL)) = 1
-BEGIN
-INSERT INTO #Final2 Values(@item,@des,(SELECT [Description] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] WHERE [Code]=@allg))
-DELETE FROM #Final WHERE Item=@item AND (Allergen=@allg OR Allergen IS NULL)
+	Select Top 1 @item = Item From @Final WHERE Processed=0
+	Select Top 1 @expdate = Exp From @Final WHERE Processed=0
+	Select Top 1 @allg = Allergen From @Final WHERE Processed=0
+	IF (Select Count(*) From @Final WHERE Item=@item AND Processed=0 AND (Allergen LIKE LEFT(@allg,2)+'%' OR Allergen IS NULL)) = 1
+	BEGIN
+		UPDATE @Final SET Processed=1, Allergen=(SELECT [Description] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] WHERE [Code]=@allg)
+		WHERE Item=@item AND (Allergen=@allg OR Allergen IS NULL)
+	END
+	ELSE
+	BEGIN
+		DELETE FROM @Final WHERE Item=@item AND Allergen=LEFT(@allg,2)
+		Select Top 1 @prefix = SUBSTRING([Description],0, CHARINDEX('(',[Description])) From @Final LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] ON Code=Allergen COLLATE DATABASE_DEFAULT WHERE Allergen LIKE LEFT(@allg,2)+'%'
+		INSERT INTO @Final
+		SELECT @item,@expdate,RTRIM(@prefix)+' ('+STUFF((SELECT ', ' + CAST((SELECT SUBSTRING([Description],CHARINDEX('(',[Description])+1, CHARINDEX(')',[Description],CHARINDEX('(',[Description])+1)-CHARINDEX('(',[Description])-1)) AS VARCHAR(80)) AS [text()] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] LEFT JOIN @Final ON Allergen=Code COLLATE DATABASE_DEFAULT  WHERE Allergen LIKE LEFT(@allg,2)+'%' AND Item=@item FOR XML PATH('')), 1, 2, NULL)+')',1
+		DELETE FROM @Final WHERE Item=@item AND Allergen LIKE LEFT(@allg,2)+'%' AND Processed=0
+	END
 END
-ELSE
-BEGIN
-DELETE FROM #Final WHERE Item=@item AND Allergen=LEFT(@allg,2)
-Select Top 1 @prefix = SUBSTRING([Description],0, CHARINDEX('(',[Description])) From #Final LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] ON Code=Allergen COLLATE DATABASE_DEFAULT WHERE Allergen LIKE LEFT(@allg,2)+'%'
-INSERT INTO #Final2
-SELECT @item,@des,RTRIM(@prefix)+' ('+STUFF((SELECT ', ' + CAST((SELECT SUBSTRING([Description],CHARINDEX('(',[Description])+1, CHARINDEX(')',[Description],CHARINDEX('(',[Description])+1)-CHARINDEX('(',[Description])-1)) AS VARCHAR(80)) AS [text()] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Allergen] LEFT JOIN #Final ON Allergen=Code COLLATE DATABASE_DEFAULT  WHERE Allergen LIKE LEFT(@allg,2)+'%' AND Item=@item FOR XML PATH('')), 1, 2, NULL)+')'
-DELETE FROM #Final WHERE Item=@item AND Allergen LIKE LEFT(@allg,2)+'%'
-END
-END
-DECLARE @Exp2 TABLE(
-Item varchar(255),
-Decpt varchar(255),
-StickerName varchar(255),
-Allergen varchar(500)
-)
-INSERT INTO @Exp2
-SELECT Item,([Description]+[Description 2]),[Sticker Name],'Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM #Final2 y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)
-FROM #Final2 x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
-GROUP BY Item,Decpt,[Sticker Name],[Description],[Description 2]
 
-SELECT x.Item, x.Decpt, StickerName, Allergen, (CASE WHEN y.Date IS NOT NULL THEN DATEADD(DAY,8,y.Date) ELSE NULL END)'Exp'
-FROM @Exp2 x
-LEFT JOIN @Exp y ON y.Item=x.Item
-DROP TABLE #Sub
-DROP TABLE #Output
-DROP TABLE #Temp
-DROP TABLE #Final
-DROP TABLE #Final2";
+SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp
+FROM @Final x
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
+GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
             }
             SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["PrepTrackerConnectionString2"].ConnectionString);
             con.Open();

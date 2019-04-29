@@ -122,7 +122,7 @@ namespace PrepTracker
                 string fulfill = "";
                 if (cbFulfill.Checked == true)
                 {
-                    fulfill = "WHERE (OnHand-rsved-Fri-Sat-Sun-Mon-Tue-Wed)<0";
+                    fulfill = "WHERE (z.Total-(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)-x.Total)<0";
                 }
                 else
                 {
@@ -134,513 +134,136 @@ namespace PrepTracker
                     lblSource.Text = "Source: Web Order";
                     sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
                                 DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
-                                CREATE TABLE #Output (
-                                    Item varchar(255),
-	                                Decpt varchar(255),
-	                                Date Date,
-	                                Qty int
-                                   )
-                                CREATE TABLE #Temp (
-                                    Item varchar(255),
-	                                Decpt varchar(255),
-	                                Date Date,
-	                                Qty int,
-	                                Meal varchar(50)
-                                   )
-                                CREATE TABLE #Sub (
-                                    Item varchar(255),
-	                                Decpt varchar(255),
-	                                Date Date,
-	                                Qty int,
-	                                Meal varchar(50)
-                                 )
-                                INSERT INTO #Sub
-                                SELECT No_,'',[Shipment Date],SUM(Quantity)'Qty',''
-                                FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-                                WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
-                                GROUP BY No_,[Shipment Date]
+                                DECLARE @ORDER TABLE(
+Item varchar(25),
+Parent varchar(25),
+Qty_Per Decimal(22,6),
+Date Date,
+Qty Decimal(22,6),
+Level int,
+Processed bigint
+)
+DECLARE @OLD_ORDER TABLE(
+Item varchar(25),
+Qty Decimal(22,6)
+)
+DECLARE @STKU TABLE(
+Item varchar(25),
+Parent varchar(25),
+Date Date,
+Qty Decimal(22,6),
+OnHand Decimal(22,6),
+Code varchar(50)
+)
+DECLARE @INVENTORY TABLE(
+Item varchar(25),
+Qty Decimal(22,6),
+Total Decimal(22,6)
+)
+DECLARE @max INT
+DECLARE @item varchar(25)
+DECLARE @qty Decimal(22,6)
+DECLARE @in_qty Decimal
+DECLARE @min_date Date
+DECLARE @max_date Date
 
-                                INSERT INTO #Output
-                                SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-                                FROM #Sub x
-                                LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
+INSERT INTO @ORDER
+SELECT No_,'',0,[Shipment Date],SUM(Quantity),0,0
+FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
+WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+GROUP BY No_,[Shipment Date]
 
-                                DELETE FROM #Sub
+    INSERT INTO @ORDER
+	SELECT [No_],'',0,DATEADD(DAY, -4, @date),SUM(Quantity),0,0
+	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
+	WHERE [Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+	GROUP BY [No_]
 
-                                DECLARE @item VARCHAR(50)
-                                DECLARE @meal VARCHAR(50)
-                                DECLARE @pdate Date
-                                DECLARE @qty int
-                                DECLARE @hand int
+--EXPLORE THE BOM
+DECLARE @level int = 0
+While (Select Count(*) From @ORDER WHERE Level=@level) > 0
+Begin
+	DELETE FROM @STKU
+	INSERT INTO @STKU
+	SELECT (CASE WHEN (y.[Production BOM No_]='' OR y.[Production BOM No_] IS NULL) THEN x.Item ELSE y.[Production BOM No_] END),x.Item,Date,Qty,0,z.[Item Category Code] FROM @ORDER x
+	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item AND y.[Location Code]=@location
+	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] z ON z.No_=x.Item
+	WHERE Level=@level	
+	GROUP BY x.Item,y.[Production BOM No_],Date,Qty,z.[Item Category Code]
+	INSERT INTO @ORDER
+	SELECT x.[No_],z.Parent,[Quantity per],z.Date,SUM([Quantity per]*Qty),(@level+1),0
+	FROM @STKU z
+	INNER JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x ON x.[Production BOM No_]=Item 
+	WHERE ((x.No_ LIKE '1%' AND Code!='TRAY' AND x.[Production BOM No_] NOT LIKE '2%' AND x.[Production BOM No_] NOT LIKE '3%' AND x.[Production BOM No_] NOT LIKE '4%') OR x.No_ LIKE '2%' OR x.No_ LIKE '3%' OR x.No_ LIKE '4%' OR x.No_ LIKE '6%' OR x.No_ LIKE '8%') 
+	AND ((x.[Starting Date]<=z.Date AND x.[Ending Date]>=z.Date) OR (x.[Starting Date]<=z.Date AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=z.Date))
+	GROUP BY x.No_,z.Parent,[Quantity per],z.Date
+	SET @level=@level+1
+END
+DELETE FROM @ORDER WHERE Level=0 OR Item LIKE '8%'
 
-                                While (Select Count(*) From #Output) > 0
-                                Begin
-	                                Select Top 1 @item = Item From #Output
-	                                Select Top 1 @pdate = Date From #Output
-	                                Select Top 1 @qty = Qty From #Output
-
-	                                INSERT INTO #Temp
-	                                SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty,@item
-	                                FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-									LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	                                WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	                                DELETE FROM #Output WHERE Item=@item AND Date=@pdate
-                                END
-
-                                INSERT INTO #Output
-                                SELECT Item,Decpt,Date,Qty
-                                FROM #Temp
-
-                                DELETE FROM #Temp WHERE Item NOT LIKE '6%'
-
-CREATE TABLE #6K (
-    Item varchar(255)
-    )
-INSERT INTO #6K
-SELECT Item
-FROM #Temp
+--GET INVENTORY
+;WITH ITEMS AS (SELECT Item FROM @ORDER GROUP BY Item)
+INSERT INTO @INVENTORY
+SELECT Item,SUM((CASE WHEN Quantity IS NULL THEN 0 ELSE Quantity END)),SUM((CASE WHEN Quantity IS NULL THEN 0 ELSE Quantity END))
+FROM ITEMS x
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] y ON y.[Item No_]=x.Item AND y.[Location Code]=@location
 GROUP BY Item
 
-While (Select Count(*) From #6K) > 0
-Begin
-	Select Top 1 @item = Item From #6K
-	SELECT @hand = (CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] WHERE [Location Code]=@location AND [Item No_]=@item COLLATE DATABASE_DEFAULT
-	IF @hand>0
-	Begin
-		CREATE TABLE #6K_Date (
-		Date Date
-		)
-		INSERT INTO #6K_Date
-		SELECT Date
-		FROM #TEMP
-		WHERE Item=@item
-
-		While (Select Count(*) From #6K_Date) > 0
-		Begin
-			Select Top 1 @pdate = Date From #6K_Date ORDER BY Date
-			Select @qty = Qty From #Temp WHERE Item=@item AND Date=@pdate
-			if @qty<=@hand
+--APPLY INVERTORY
+SELECT @max = MAX(Level) FROM @ORDER
+SELECT @min_date = MIN(Date) FROM @ORDER
+SELECT @max_date = MAX(Date) FROM @ORDER
+--LOOP DATE
+WHILE @min_date<=@max_date
+BEGIN
+	SET @level=1
+	--LOOP LEVEL
+	WHILE @level<=@max
+	BEGIN
+		WHILE (SELECT COUNT(*) FROM @ORDER WHERE Date=@min_date AND Level=@level AND Processed=0 AND Item NOT LIKE '1%')>0
+		BEGIN
+			SELECT TOP 1 @item = Item FROM @ORDER WHERE Date=@min_date AND Level=@level AND Processed=0 AND Item NOT LIKE '1%'
+			SELECT TOP 1 @qty = Qty FROM @ORDER WHERE Date=@min_date AND Level=@level AND Processed=0 AND Item NOT LIKE '1%'
+			SELECT @in_qty = Qty FROM @INVENTORY WHERE Item=@item
+			if @qty<=@in_qty
 			Begin
-				Select @hand = @hand-@qty
-                UPDATE #TEMP SET Qty = 0 WHERE Item =@item AND Date=@pdate
-				--DELETE FROM #TEMP WHERE Item =@item AND Date=@pdate
+				UPDATE @INVENTORY SET Qty= @in_qty-@qty WHERE Item=@item
+				UPDATE @ORDER SET Qty=0 WHERE Date=@min_date AND Level=(@level+1) AND Parent=@item
 			End
 			Else
 			Begin
-				UPDATE #TEMP SET Qty = (@qty-@hand) WHERE Item =@item AND Date=@pdate
-				Select @hand = 0
+				UPDATE @ORDER SET Qty=(Qty-(@in_qty*Qty_Per)) WHERE Date=@min_date AND Level=(@level+1) AND Parent=@item
+				UPDATE @INVENTORY SET Qty= 0 WHERE Item=@item
 			End
-			DELETE FROM #6K_Date WHERE Date=@pdate
-		End
-		DROP TABLE #6K_Date
-	End
-	DELETE FROM #6K WHERE Item=@item
-End
-DROP TABLE #6K
-
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-	Select Top 1 @item = Item From #Sub
-	Select Top 1 @pdate = Date From #Sub
-	Select Top 1 @qty = Qty From #Sub
-	Select Top 1 @meal = Meal From #Sub
-
-	                                INSERT INTO #Output
-	                                SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty
-	                                FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-									LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	                                WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%' OR x.[No_] LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	                                DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
-                                END
-                                CREATE TABLE #Final (
-                                    Item varchar(255),
-	                                Decpt varchar(255),
-	                                Fri int,
-	                                Sat int,
-	                                Sun int,
-	                                Mon int,
-	                                Tue int,
-									Wed int
-                                   )
-                                INSERT INTO #Final
-                                SELECT Item,Decpt,SUM(CASE WHEN Date=DATEADD(DAY, -3, @date) THEN Qty ELSE 0 END) 'Fri'
-                                ,SUM(CASE WHEN Date=DATEADD(DAY, -2, @date) THEN Qty ELSE 0 END) 'Sat'
-                                ,SUM(CASE WHEN Date=DATEADD(DAY, -1, @date) THEN Qty ELSE 0 END) 'Sun'
-                                ,SUM(CASE WHEN Date=DATEADD(DAY, 0, @date) THEN Qty ELSE 0 END) 'Mon'
-                                ,SUM(CASE WHEN Date=DATEADD(DAY, 1, @date) THEN Qty ELSE 0 END) 'Tue'
-								,SUM(CASE WHEN Date=DATEADD(DAY, 2, @date) THEN Qty ELSE 0 END) 'Wed'
-                                FROM #Output
-								WHERE Item LIKE '" + ddlItem.Text + @"'
-                                GROUP BY Item,Decpt
-CREATE TABLE #Final2 (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-	Wed int,
-	OnHand int,
-	rsved int
-    )
-INSERT INTO #Final2
-SELECT Item,Decpt,Fri,Sat,Sun,Mon,Tue,Wed,(CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END)'OnHand','0' 'rsved'
-FROM #Final x LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] y ON [Location Code]=@location AND [Item No_]=Item COLLATE DATABASE_DEFAULT
-GROUP BY Item,Decpt,Fri,Sat,Sun,Mon,Tue,Wed
-
-CREATE TABLE #Final3 (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-	Wed int,
-	OnHand int,
-	rsved int,
-	OnProd int
-    )
-INSERT INTO #Final3
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved,(CASE WHEN SUM(y.[Remaining Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(y.[Remaining Quantity])) END)
-FROM #Final2 x 
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Prod_ Order Line] y ON y.[Location Code]=@location AND y.Status=3 AND y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved
-
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,(Fri+Sat+Sun+Mon+Tue+Wed)'Total',OnHand,rsved,OnProd,
-(CASE WHEN [Expiration Calculation] LIKE '%' THEN 1*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 7*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 30*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 365*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE 0 END) END) END) END)'life'
-FROM #Final3 x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] n ON n.No_ = x.Item COLLATE DATABASE_DEFAULT
-" + fulfill + @"
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved,OnProd,[Expiration Calculation]
-
-DROP TABLE #Sub
-DROP TABLE #Output
-DROP TABLE #Temp
-DROP TABLE #Final
-DROP TABLE #Final2
-DROP TABLE #Final3
-";
-                }
-                else if (DateTime.Today >= Convert.ToDateTime(ddlCycle.Text).AddDays(-5))
-                {
-                    lblSource.Text = "Source: Forecast";
-                    sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
-                                DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
-                                CREATE TABLE #Output (
-    Item varchar(255),
-	Decpt varchar(255),
-	Date Date,
-	Qty int
-    )
-CREATE TABLE #Temp (
-    Item varchar(255),
-	Decpt varchar(255),
-	Date Date,
-	Qty int,
-	Meal varchar(50)
-    )
-CREATE TABLE #Sub (
-    Item varchar(255),
-	Decpt varchar(255),
-	Date Date,
-	Qty int,
-	Meal varchar(50)
- )
-INSERT INTO #Sub
-SELECT [Item No_],[Description],[Forecast Date],[Forecast Quantity],''
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
-WHERE [Forecast Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND [Location Code]=@location
-
-INSERT INTO #Output
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-FROM #Sub x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Sub
-
-DECLARE @item VARCHAR(50)
-DECLARE @meal VARCHAR(50)
-DECLARE @pdate Date
-DECLARE @qty int
-DECLARE @hand int
-DECLARE @fused int
-DECLARE @wused int
-DECLARE @BOM VARCHAR(50)
-
-While (Select Count(*) From #Output) > 0
-Begin
-	Select Top 1 @item = Item From #Output
-	Select Top 1 @pdate = Date From #Output
-	Select Top 1 @qty = Qty From #Output
-
-	INSERT INTO #Temp
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty,@item
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Output WHERE Item=@item AND Date=@pdate
+			UPDATE @ORDER SET Processed=1 WHERE Date=@min_date AND Level=@level AND Item=@item
+		END
+		SET @level= @level+1
+	END
+	SET @min_date= DATEADD(DAY,1,@min_date)
 END
 
-INSERT INTO #Output
-SELECT Item,Decpt,Date,Qty
-FROM #Temp
+INSERT INTO @OLD_ORDER SELECT Item,SUM(Qty) FROM @ORDER WHERE Date=DATEADD(DAY, -4, @date) GROUP BY Item
+DELETE FROM @ORDER WHERE Date=DATEADD(DAY, -4, @date) OR Item NOT LIKE '" + ddlItem.Text + @"'
 
-DELETE FROM #Temp WHERE Item NOT LIKE '6%'
-
-CREATE TABLE #6K (
-    Item varchar(255)
-    )
-CREATE TABLE #6K_Date (
-	Date Date
-	)
-INSERT INTO #6K
-SELECT Item
-FROM #Temp
-GROUP BY Item
-
-While (Select Count(*) From #6K) > 0
-Begin
-	Select Top 1 @item = Item From #6K
-	SELECT @BOM = [Production BOM No_] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] WHERE [No_]=@item
-	SELECT @fused = (CASE WHEN SUM([Forecast Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Forecast Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry] WHERE [Forecast Date] <DATEADD(DAY, -4, @date) AND [Location Code]=@location AND [Item No_]=@BOM
-    SELECT @hand = (CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] WHERE [Location Code]=@location AND [Item No_]=@item COLLATE DATABASE_DEFAULT
-	SELECT @hand= @hand-@fused
-	IF @hand>0
-	Begin
-		INSERT INTO #6K_Date
-		SELECT Date
-		FROM #TEMP
-		WHERE Item=@item
-
-		While (Select Count(*) From #6K_Date) > 0
-		Begin
-			Select Top 1 @pdate = Date From #6K_Date ORDER BY Date
-			Select @qty = Qty From #Temp WHERE Item=@item AND Date=@pdate
-			if @qty<=@hand
-			Begin
-				Select @hand = @hand-@qty
-				DELETE FROM #TEMP WHERE Item =@item AND Date=@pdate
-			End
-			Else
-			Begin
-				UPDATE #TEMP SET Qty = (@qty-@hand) WHERE Item =@item AND Date=@pdate
-				Select @hand = 0
-			End
-			DELETE FROM #6K_Date WHERE Date=@pdate
-		End
-	End
-	DELETE FROM #6K WHERE Item=@item
-End
-
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-	Select Top 1 @item = Item From #Sub
-	Select Top 1 @pdate = Date From #Sub
-	Select Top 1 @qty = Qty From #Sub
-	Select Top 1 @meal = Meal From #Sub
-
-	INSERT INTO #Output
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%' OR x.[No_] LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
-END
-
-CREATE TABLE #Final (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-    Wed int
-    )
-INSERT INTO #Final
-SELECT Item,Decpt,SUM(CASE WHEN Date=DATEADD(DAY, -3, @date) THEN Qty ELSE 0 END) 'Fri'
+;WITH WeekQty AS(SELECT Item,SUM(CASE WHEN Date=DATEADD(DAY, -3, @date) THEN Qty ELSE 0 END) 'Fri'
 ,SUM(CASE WHEN Date=DATEADD(DAY, -2, @date) THEN Qty ELSE 0 END) 'Sat'
 ,SUM(CASE WHEN Date=DATEADD(DAY, -1, @date) THEN Qty ELSE 0 END) 'Sun'
 ,SUM(CASE WHEN Date=DATEADD(DAY, 0, @date) THEN Qty ELSE 0 END) 'Mon'
 ,SUM(CASE WHEN Date=DATEADD(DAY, 1, @date) THEN Qty ELSE 0 END) 'Tue'
 ,SUM(CASE WHEN Date=DATEADD(DAY, 2, @date) THEN Qty ELSE 0 END) 'Wed'
-FROM #Output
-WHERE Item LIKE '" + ddlItem.Text + @"'
-GROUP BY Item,Decpt
-
-DELETE FROM #Output
-
-INSERT INTO #Sub
-SELECT [Item No_],'','1/1/2018',SUM([Forecast Quantity]),''
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
-WHERE [Forecast Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location
-GROUP BY [Item No_]
-
-INSERT INTO #Output
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-FROM #Sub x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Sub
-
-While (Select Count(*) From #Output) > 0
-Begin
-	Select Top 1 @item = Item From #Output
-	Select Top 1 @pdate = Date From #Output
-	Select Top 1 @qty = Qty From #Output
-
-	INSERT INTO #Temp
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty,@item
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Output WHERE Item=@item AND Date=@pdate
-END
-
-INSERT INTO #Output
-SELECT Item,Decpt,Date,Qty
-FROM #Temp
-
-DELETE FROM #Temp WHERE Item NOT LIKE '6%'
-
-INSERT INTO #6K
-SELECT Item
-FROM #Temp
-GROUP BY Item
-
-While (Select Count(*) From #6K) > 0
-Begin
-	Select Top 1 @item = Item From #6K
-	SELECT @hand = (CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] WHERE [Location Code]=@location AND [Item No_]=@item COLLATE DATABASE_DEFAULT
-	IF @hand>0
-	Begin
-		INSERT INTO #6K_Date
-		SELECT Date
-		FROM #TEMP
-		WHERE Item=@item
-
-		While (Select Count(*) From #6K_Date) > 0
-		Begin
-			Select Top 1 @pdate = Date From #6K_Date ORDER BY Date
-			Select @qty = Qty From #Temp WHERE Item=@item AND Date=@pdate
-			if @qty<=@hand
-			Begin
-				Select @hand = @hand-@qty
-				DELETE FROM #TEMP WHERE Item =@item AND Date=@pdate
-			End
-			Else
-			Begin
-				UPDATE #TEMP SET Qty = (@qty-@hand) WHERE Item =@item AND Date=@pdate
-				Select @hand = 0
-			End
-			DELETE FROM #6K_Date WHERE Date=@pdate
-		End
-	End
-	DELETE FROM #6K WHERE Item=@item
-End
-
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-	Select Top 1 @item = Item From #Sub
-	Select Top 1 @pdate = Date From #Sub
-	Select Top 1 @qty = Qty From #Sub
-	Select Top 1 @meal = Meal From #Sub
-
-	INSERT INTO #Output
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%' OR x.[No_] LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
-END
-
-INSERT INTO #Temp
-SELECT Item,'','1/1/2018',SUM(Qty),''
-FROM #Output
-GROUP BY Item
-
-CREATE TABLE #Final2 (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-	Wed int,
-	OnHand int,
-	rsved int
-    )
-INSERT INTO #Final2
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,(CASE WHEN SUM(y.[Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(y.[Quantity])) END)'OnHand', (CASE WHEN z.Qty IS NULL THEN 0 ELSE FLOOR(z.Qty) END)'rsved'
-FROM #Final x 
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] y ON y.[Location Code]=@location AND y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT
-LEFT JOIN #Temp z ON z.Item=x.Item
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,z.Qty
-
-CREATE TABLE #Final3 (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-    Wed int,
-	OnHand int,
-	rsved int,
-	OnProd int
-    )
-INSERT INTO #Final3
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved,(CASE WHEN SUM(y.[Remaining Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(y.[Remaining Quantity])) END)
-FROM #Final2 x 
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Prod_ Order Line] y ON y.[Location Code]=@location AND y.Status=3 AND y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved
-
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,(Fri+Sat+Sun+Mon+Tue+Wed)'Total',OnHand,rsved,OnProd,
+,SUM(Qty)'Total'
+FROM @ORDER
+GROUP BY Item)
+SELECT x.Item,(y.[Description]+y.[Description 2])'Decpt',Fri,Sat,Sun,Mon,Tue,Wed,x.Total,z.Total 'OnHand',(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)'rsved',
+(CASE WHEN SUM(n.[Remaining Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(n.[Remaining Quantity])) END)'OnProd',
 (CASE WHEN [Expiration Calculation] LIKE '%' THEN 1*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 7*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 30*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 365*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE 0 END) END) END) END)'life'
-FROM #Final3 x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] n ON n.No_ = x.Item COLLATE DATABASE_DEFAULT
+FROM WeekQty x
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.Item
+LEFT JOIN @INVENTORY z ON z.Item=x.Item
+LEFT JOIN @OLD_ORDER v ON v.Item=x.Item
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Prod_ Order Line] n ON n.[Location Code]=@location AND n.Status=3 AND n.[Item No_]=x.Item
 " + fulfill + @"
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved,OnProd,[Expiration Calculation]
-
-DROP TABLE #Sub
-DROP TABLE #6K_Date
-DROP TABLE #6K
-DROP TABLE #Output
-DROP TABLE #Temp
-DROP TABLE #Final
-DROP TABLE #Final2
-DROP TABLE #Final3
+GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Total,z.Total,v.Qty,[Expiration Calculation]
 ";
                 }
                 else
@@ -648,316 +271,150 @@ DROP TABLE #Final3
                     lblSource.Text = "Source: Forecast";
                     sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
                                 DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
-                                CREATE TABLE #Output (
-    Item varchar(255),
-	Decpt varchar(255),
-	Date Date,
-	Qty int
-    )
-CREATE TABLE #Temp (
-    Item varchar(255),
-	Decpt varchar(255),
-	Date Date,
-	Qty int,
-	Meal varchar(50)
-    )
-CREATE TABLE #Sub (
-    Item varchar(255),
-	Decpt varchar(255),
-	Date Date,
-	Qty int,
-	Meal varchar(50)
- )
-INSERT INTO #Sub
-SELECT [Item No_],[Description],[Forecast Date],[Forecast Quantity],''
+                                DECLARE @ORDER TABLE(
+Item varchar(25),
+Parent varchar(25),
+Qty_Per Decimal(22,6),
+Date Date,
+Qty Decimal(22,6),
+Level int,
+Processed bigint
+)
+DECLARE @OLD_ORDER TABLE(
+Item varchar(25),
+Qty Decimal(22,6)
+)
+DECLARE @STKU TABLE(
+Item varchar(25),
+Parent varchar(25),
+Date Date,
+Qty Decimal(22,6),
+OnHand Decimal(22,6),
+Code varchar(50)
+)
+DECLARE @INVENTORY TABLE(
+Item varchar(25),
+Qty Decimal(22,6),
+Total Decimal(22,6)
+)
+DECLARE @max INT
+DECLARE @item varchar(25)
+DECLARE @qty Decimal(22,6)
+DECLARE @in_qty Decimal
+DECLARE @min_date Date
+DECLARE @max_date Date
+
+INSERT INTO @ORDER
+SELECT [Item No_],'',0,[Forecast Date],[Forecast Quantity],0,0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
 WHERE [Forecast Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND [Location Code]=@location
 
-INSERT INTO #Output
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-FROM #Sub x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Sub
-
-DECLARE @item VARCHAR(50)
-DECLARE @meal VARCHAR(50)
-DECLARE @pdate Date
-DECLARE @qty int
-DECLARE @hand int
-DECLARE @fused int
-DECLARE @wused int
-DECLARE @BOM VARCHAR(50)
-
-While (Select Count(*) From #Output) > 0
-Begin
-	Select Top 1 @item = Item From #Output
-	Select Top 1 @pdate = Date From #Output
-	Select Top 1 @qty = Qty From #Output
-
-	INSERT INTO #Temp
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty,@item
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Output WHERE Item=@item AND Date=@pdate
+--INSERT OLD ORDER
+IF GETDATE()>=DATEADD(DAY,-5,@date)
+	INSERT INTO @ORDER
+	SELECT [Item No_],'',0,DATEADD(DAY, -4, @date),SUM([Forecast Quantity]),0,0
+	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
+	WHERE [Forecast Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location
+	GROUP BY [Item No_]
+ELSE
+BEGIN
+	WITH OLD AS (SELECT [Item No_],SUM([Forecast Quantity])'Qty'
+	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
+	WHERE [Forecast Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location
+	GROUP BY [Item No_] UNION SELECT [No_],SUM(Quantity)'Qty'
+	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
+	WHERE [Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+	GROUP BY [No_])
+	INSERT INTO @ORDER
+	SELECT [Item No_],'',0,DATEADD(DAY, -4, @date),SUM(Qty),0,0 FROM OLD
+	GROUP BY [Item No_]
 END
 
-INSERT INTO #Output
-SELECT Item,Decpt,Date,Qty
-FROM #Temp
+--EXPLORE THE BOM
+DECLARE @level int = 0
+While (Select Count(*) From @ORDER WHERE Level=@level) > 0
+Begin
+	DELETE FROM @STKU
+	INSERT INTO @STKU
+	SELECT (CASE WHEN (y.[Production BOM No_]='' OR y.[Production BOM No_] IS NULL) THEN x.Item ELSE y.[Production BOM No_] END),x.Item,Date,Qty,0,z.[Item Category Code] FROM @ORDER x
+	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item AND y.[Location Code]=@location
+	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] z ON z.No_=x.Item
+	WHERE Level=@level	
+	GROUP BY x.Item,y.[Production BOM No_],Date,Qty,z.[Item Category Code]
+	INSERT INTO @ORDER
+	SELECT x.[No_],z.Parent,[Quantity per],z.Date,SUM([Quantity per]*Qty),(@level+1),0
+	FROM @STKU z
+	INNER JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x ON x.[Production BOM No_]=Item 
+	WHERE ((x.No_ LIKE '1%' AND Code!='TRAY' AND x.[Production BOM No_] NOT LIKE '2%' AND x.[Production BOM No_] NOT LIKE '3%' AND x.[Production BOM No_] NOT LIKE '4%') OR x.No_ LIKE '2%' OR x.No_ LIKE '3%' OR x.No_ LIKE '4%' OR x.No_ LIKE '6%' OR x.No_ LIKE '8%') 
+	AND ((x.[Starting Date]<=z.Date AND x.[Ending Date]>=z.Date) OR (x.[Starting Date]<=z.Date AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=z.Date))
+	GROUP BY x.No_,z.Parent,[Quantity per],z.Date
+	SET @level=@level+1
+END
+DELETE FROM @ORDER WHERE Level=0 OR Item LIKE '8%'
 
-DELETE FROM #Temp WHERE Item NOT LIKE '6%'
-
-CREATE TABLE #6K (
-    Item varchar(255)
-    )
-CREATE TABLE #6K_Date (
-	Date Date
-	)
-INSERT INTO #6K
-SELECT Item
-FROM #Temp
+--GET INVENTORY
+;WITH ITEMS AS (SELECT Item FROM @ORDER GROUP BY Item)
+INSERT INTO @INVENTORY
+SELECT Item,SUM((CASE WHEN Quantity IS NULL THEN 0 ELSE Quantity END)),SUM((CASE WHEN Quantity IS NULL THEN 0 ELSE Quantity END))
+FROM ITEMS x
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] y ON y.[Item No_]=x.Item AND y.[Location Code]=@location
 GROUP BY Item
 
-While (Select Count(*) From #6K) > 0
-Begin
-	Select Top 1 @item = Item From #6K
-	SELECT @BOM = [Production BOM No_] FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] WHERE [No_]=@item
-	SELECT @fused = (CASE WHEN SUM([Forecast Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Forecast Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry] WHERE [Forecast Date] <DATEADD(DAY, -4, @date) AND [Location Code]=@location AND [Item No_]=@BOM
-	SELECT @wused = (CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line] WHERE [Shipment Date] <DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_=@BOM
-	SELECT @hand = (CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] WHERE [Location Code]=@location AND [Item No_]=@item COLLATE DATABASE_DEFAULT
-	SELECT @hand= @hand-@fused-@wused
-	IF @hand>0
-	Begin
-		INSERT INTO #6K_Date
-		SELECT Date
-		FROM #TEMP
-		WHERE Item=@item
-
-		While (Select Count(*) From #6K_Date) > 0
-		Begin
-			Select Top 1 @pdate = Date From #6K_Date ORDER BY Date
-			Select @qty = Qty From #Temp WHERE Item=@item AND Date=@pdate
-			if @qty<=@hand
+--APPLY INVERTORY
+SELECT @max = MAX(Level) FROM @ORDER
+SELECT @min_date = MIN(Date) FROM @ORDER
+SELECT @max_date = MAX(Date) FROM @ORDER
+--LOOP DATE
+WHILE @min_date<=@max_date
+BEGIN
+	SET @level=1
+	--LOOP LEVEL
+	WHILE @level<=@max
+	BEGIN
+		WHILE (SELECT COUNT(*) FROM @ORDER WHERE Date=@min_date AND Level=@level AND Processed=0 AND Item NOT LIKE '1%')>0
+		BEGIN
+			SELECT TOP 1 @item = Item FROM @ORDER WHERE Date=@min_date AND Level=@level AND Processed=0 AND Item NOT LIKE '1%'
+			SELECT TOP 1 @qty = Qty FROM @ORDER WHERE Date=@min_date AND Level=@level AND Processed=0 AND Item NOT LIKE '1%'
+			SELECT @in_qty = Qty FROM @INVENTORY WHERE Item=@item
+			if @qty<=@in_qty
 			Begin
-				Select @hand = @hand-@qty
-				DELETE FROM #TEMP WHERE Item =@item AND Date=@pdate
+				UPDATE @INVENTORY SET Qty= @in_qty-@qty WHERE Item=@item
+				UPDATE @ORDER SET Qty=0 WHERE Date=@min_date AND Level=(@level+1) AND Parent=@item
 			End
 			Else
 			Begin
-				UPDATE #TEMP SET Qty = (@qty-@hand) WHERE Item =@item AND Date=@pdate
-				Select @hand = 0
+				UPDATE @ORDER SET Qty=(Qty-(@in_qty*Qty_Per)) WHERE Date=@min_date AND Level=(@level+1) AND Parent=@item
+				UPDATE @INVENTORY SET Qty= 0 WHERE Item=@item
 			End
-			DELETE FROM #6K_Date WHERE Date=@pdate
-		End
-	End
-	DELETE FROM #6K WHERE Item=@item
-End
-
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-	Select Top 1 @item = Item From #Sub
-	Select Top 1 @pdate = Date From #Sub
-	Select Top 1 @qty = Qty From #Sub
-	Select Top 1 @meal = Meal From #Sub
-
-	INSERT INTO #Output
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%' OR x.[No_] LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
+			UPDATE @ORDER SET Processed=1 WHERE Date=@min_date AND Level=@level AND Item=@item
+		END
+		SET @level= @level+1
+	END
+	SET @min_date= DATEADD(DAY,1,@min_date)
 END
 
-CREATE TABLE #Final (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-    Wed int
-    )
-INSERT INTO #Final
-SELECT Item,Decpt,SUM(CASE WHEN Date=DATEADD(DAY, -3, @date) THEN Qty ELSE 0 END) 'Fri'
+INSERT INTO @OLD_ORDER SELECT Item,SUM(Qty) FROM @ORDER WHERE Date=DATEADD(DAY, -4, @date) GROUP BY Item
+DELETE FROM @ORDER WHERE Date=DATEADD(DAY, -4, @date) OR Item NOT LIKE '" + ddlItem.Text + @"'
+
+;WITH WeekQty AS(SELECT Item,SUM(CASE WHEN Date=DATEADD(DAY, -3, @date) THEN Qty ELSE 0 END) 'Fri'
 ,SUM(CASE WHEN Date=DATEADD(DAY, -2, @date) THEN Qty ELSE 0 END) 'Sat'
 ,SUM(CASE WHEN Date=DATEADD(DAY, -1, @date) THEN Qty ELSE 0 END) 'Sun'
 ,SUM(CASE WHEN Date=DATEADD(DAY, 0, @date) THEN Qty ELSE 0 END) 'Mon'
 ,SUM(CASE WHEN Date=DATEADD(DAY, 1, @date) THEN Qty ELSE 0 END) 'Tue'
 ,SUM(CASE WHEN Date=DATEADD(DAY, 2, @date) THEN Qty ELSE 0 END) 'Wed'
-FROM #Output
-WHERE Item LIKE '" + ddlItem.Text + @"'
-GROUP BY Item,Decpt
-
-DELETE FROM #Output
-
-INSERT INTO #Sub
-SELECT [Item No_],'','1/1/2018',SUM([Forecast Quantity]),''
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
-WHERE [Forecast Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location
-GROUP BY [Item No_]
-INSERT INTO #Sub
-SELECT [No_],'','1/2/2018',SUM(Quantity),''
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-WHERE [Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location
-GROUP BY [No_]
-
-INSERT INTO #Output
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty
-FROM #Sub x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Sub
-
-While (Select Count(*) From #Output) > 0
-Begin
-	Select Top 1 @item = Item From #Output
-	Select Top 1 @pdate = Date From #Output
-	Select Top 1 @qty = Qty From #Output
-
-	INSERT INTO #Temp
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty,@item
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.No_ LIKE '3%' OR x.No_ LIKE '6%' OR x.No_ LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Output WHERE Item=@item AND Date=@pdate
-END
-
-INSERT INTO #Output
-SELECT Item,Decpt,Date,Qty
-FROM #Temp
-
-DELETE FROM #Temp WHERE Item NOT LIKE '6%'
-
-INSERT INTO #6K
-SELECT Item
-FROM #Temp
-GROUP BY Item
-
-While (Select Count(*) From #6K) > 0
-Begin
-	Select Top 1 @item = Item From #6K
-	SELECT @hand = (CASE WHEN SUM([Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM([Quantity])) END) FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] WHERE [Location Code]=@location AND [Item No_]=@item COLLATE DATABASE_DEFAULT
-	IF @hand>0
-	Begin
-		INSERT INTO #6K_Date
-		SELECT Date
-		FROM #TEMP
-		WHERE Item=@item
-
-		While (Select Count(*) From #6K_Date) > 0
-		Begin
-			Select Top 1 @pdate = Date From #6K_Date ORDER BY Date
-			Select @qty = Qty From #Temp WHERE Item=@item AND Date=@pdate
-			if @qty<=@hand
-			Begin
-				Select @hand = @hand-@qty
-				DELETE FROM #TEMP WHERE Item =@item AND Date=@pdate
-			End
-			Else
-			Begin
-				UPDATE #TEMP SET Qty = (@qty-@hand) WHERE Item =@item AND Date=@pdate
-				Select @hand = 0
-			End
-			DELETE FROM #6K_Date WHERE Date=@pdate
-		End
-	End
-	DELETE FROM #6K WHERE Item=@item
-End
-
-INSERT INTO #Sub
-SELECT (CASE WHEN ([Production BOM No_]='' OR [Production BOM No_] IS NULL) THEN x.Item ELSE [Production BOM No_] END),Decpt,Date,Qty,Meal
-FROM #Temp x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] y ON y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT AND y.[Location Code]=@location
-
-DELETE FROM #Temp
-
-While (Select Count(*) From #Sub) > 0
-Begin
-	Select Top 1 @item = Item From #Sub
-	Select Top 1 @pdate = Date From #Sub
-	Select Top 1 @qty = Qty From #Sub
-	Select Top 1 @meal = Meal From #Sub
-
-	INSERT INTO #Output
-	SELECT x.[No_],(y.[Description]+y.[Description 2]),@pdate,[Quantity per]*@qty
-	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x
-	LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.No_
-	WHERE x.[Production BOM No_]=@item AND (x.[No_] LIKE '3%' OR x.[No_] LIKE '1%') AND ((x.[Starting Date]<=@pdate AND x.[Ending Date]>=@pdate) OR (x.[Starting Date]<=@pdate AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=@pdate))
-
-	DELETE FROM #Sub WHERE Item=@item AND Date=@pdate AND Meal=@meal
-END
-
-INSERT INTO #Temp
-SELECT Item,'','1/1/2018',SUM(Qty),''
-FROM #Output
-GROUP BY Item
-
-CREATE TABLE #Final2 (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-	Wed int,
-	OnHand int,
-	rsved int
-    )
-INSERT INTO #Final2
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,(CASE WHEN SUM(y.[Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(y.[Quantity])) END)'OnHand', (CASE WHEN z.Qty IS NULL THEN 0 ELSE FLOOR(z.Qty) END)'rsved'
-FROM #Final x 
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Ledger Entry] y ON y.[Location Code]=@location AND y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT
-LEFT JOIN #Temp z ON z.Item=x.Item
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,z.Qty
-
-CREATE TABLE #Final3 (
-    Item varchar(255),
-	Decpt varchar(255),
-	Fri int,
-	Sat int,
-	Sun int,
-	Mon int,
-	Tue int,
-    Wed int,
-	OnHand int,
-	rsved int,
-	OnProd int
-    )
-INSERT INTO #Final3
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved,(CASE WHEN SUM(y.[Remaining Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(y.[Remaining Quantity])) END)
-FROM #Final2 x 
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Prod_ Order Line] y ON y.[Location Code]=@location AND y.Status=3 AND y.[Item No_]=x.Item COLLATE DATABASE_DEFAULT
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved
-
-SELECT x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,(Fri+Sat+Sun+Mon+Tue+Wed)'Total',OnHand,rsved,OnProd,
+,SUM(Qty)'Total'
+FROM @ORDER
+GROUP BY Item)
+SELECT x.Item,(y.[Description]+y.[Description 2])'Decpt',Fri,Sat,Sun,Mon,Tue,Wed,x.Total,z.Total 'OnHand',(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)'rsved',
+(CASE WHEN SUM(n.[Remaining Quantity]) IS NULL THEN 0 ELSE FLOOR(SUM(n.[Remaining Quantity])) END)'OnProd',
 (CASE WHEN [Expiration Calculation] LIKE '%' THEN 1*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 7*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 30*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE (CASE WHEN [Expiration Calculation] LIKE '%' THEN 365*LEFT([Expiration Calculation],LEN([Expiration Calculation])-1) ELSE 0 END) END) END) END)'life'
-FROM #Final3 x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] n ON n.No_ = x.Item COLLATE DATABASE_DEFAULT
+FROM WeekQty x
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.Item
+LEFT JOIN @INVENTORY z ON z.Item=x.Item
+LEFT JOIN @OLD_ORDER v ON v.Item=x.Item
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Prod_ Order Line] n ON n.[Location Code]=@location AND n.Status=3 AND n.[Item No_]=x.Item
 " + fulfill + @"
-GROUP BY x.Item,x.Decpt,Fri,Sat,Sun,Mon,Tue,Wed,OnHand,rsved,OnProd,[Expiration Calculation]
-
-DROP TABLE #Sub
-DROP TABLE #6K_Date
-DROP TABLE #6K
-DROP TABLE #Output
-DROP TABLE #Temp
-DROP TABLE #Final
-DROP TABLE #Final2
-DROP TABLE #Final3
+GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Total,z.Total,v.Qty,[Expiration Calculation]
 ";
                 }
 
@@ -980,32 +437,32 @@ DROP TABLE #Final3
             
 
         }
-        int TTFNeeded = 0;
-        int TTFRsv = 0;
-        int TTSANeeded = 0;
-        int TTSARsv = 0;
-        int TTSUNeeded = 0;
-        int TTSURsv = 0;
-        int TTMNeeded = 0;
-        int TTMRsv = 0;
-        int TTTNeeded = 0;
-        int TTTRsv = 0;
-        int TTWNeeded = 0;
-        int TTWRsv = 0;
-        int TTDemand = 0;
+        decimal TTFNeeded = 0;
+        decimal TTFRsv = 0;
+        decimal TTSANeeded = 0;
+        decimal TTSARsv = 0;
+        decimal TTSUNeeded = 0;
+        decimal TTSURsv = 0;
+        decimal TTMNeeded = 0;
+        decimal TTMRsv = 0;
+        decimal TTTNeeded = 0;
+        decimal TTTRsv = 0;
+        decimal TTWNeeded = 0;
+        decimal TTWRsv = 0;
+        decimal TTDemand = 0;
         protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
         {
             if (e.Row.RowType == DataControlRowType.DataRow)
             {
-                int Total = Convert.ToInt32(((Label)e.Row.FindControl("lblTotal")).Text);
+                decimal Total = Convert.ToDecimal(((Label)e.Row.FindControl("lblTotal")).Text);
                 TTDemand += Total;
-                int onprod = Convert.ToInt32(((Label)e.Row.FindControl("lblInProd")).Text);
+                decimal onprod = Convert.ToDecimal(((Label)e.Row.FindControl("lblInProd")).Text);
                 if (onprod < 0)
                 {
                     ((Label)e.Row.FindControl("lblInProd")).Text = "0";
                 }
-                int onhand = Convert.ToInt32(((Label)e.Row.FindControl("lblTotalOnHand")).Text);
-                int committed = Convert.ToInt32(((Label)e.Row.FindControl("lblCommitted")).Text);
+                decimal onhand = Convert.ToDecimal(((Label)e.Row.FindControl("lblTotalOnHand")).Text);
+                decimal committed = Convert.ToDecimal(((Label)e.Row.FindControl("lblCommitted")).Text);
                 int life = Convert.ToInt32(((Label)e.Row.FindControl("lblLife")).Text)-1;
                 
                 onhand = onhand - committed;
@@ -1054,7 +511,7 @@ DROP TABLE #Final3
                     e.Row.Cells[18].BackColor = gray;
                     e.Row.Cells[17].BackColor = gray;
                 }
-                int fri = Convert.ToInt32(((Label)e.Row.FindControl("lblFriNeeded")).Text);
+                Decimal fri = Convert.ToDecimal(((Label)e.Row.FindControl("lblFriNeeded")).Text);
                 Label FriNeeded = (Label)e.Row.FindControl("lblFriNeeded");
                 Label FriRsv = (Label)e.Row.FindControl("lblFriOnHand");
                 Label FriPer = (Label)e.Row.FindControl("lblFriPer");
@@ -1076,8 +533,8 @@ DROP TABLE #Final3
                 }
                 else
                 {
-                    FriRsv.Text = onhand.ToString();
-                    FriPer.Text = (onhand * 100 / fri) + "%";
+                    FriRsv.Text = onhand.ToString("0.###");
+                    FriPer.Text = (onhand * 100 / fri).ToString("0") + "%";
                     TTFRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-4))/*org*/
@@ -1099,7 +556,7 @@ DROP TABLE #Final3
                         FriPer.Font.Bold = true;
                     }
                 }
-                int Sat = Convert.ToInt32(((Label)e.Row.FindControl("lblSatNeeded")).Text);
+                Decimal Sat = Convert.ToDecimal(((Label)e.Row.FindControl("lblSatNeeded")).Text);
                 Label SatNeeded = (Label)e.Row.FindControl("lblSatNeeded");
                 Label SatRsv = (Label)e.Row.FindControl("lblSatOnHand");
                 Label SatPer = (Label)e.Row.FindControl("lblSatPer");
@@ -1121,8 +578,8 @@ DROP TABLE #Final3
                 }
                 else
                 {
-                    SatRsv.Text = onhand.ToString();
-                    SatPer.Text = (onhand * 100 / Sat) + "%";
+                    SatRsv.Text = onhand.ToString("0.###");
+                    SatPer.Text = (onhand * 100 / Sat).ToString("0") + "%";
                     TTSARsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-3))/*org*/
@@ -1144,7 +601,7 @@ DROP TABLE #Final3
                         SatPer.Font.Bold = true;
                     }
                 }
-                int Sun = Convert.ToInt32(((Label)e.Row.FindControl("lblSunNeeded")).Text);
+                Decimal Sun = Convert.ToDecimal(((Label)e.Row.FindControl("lblSunNeeded")).Text);
                 Label SunNeeded = (Label)e.Row.FindControl("lblSunNeeded");
                 Label SunRsv = (Label)e.Row.FindControl("lblSunOnHand");
                 Label SunPer = (Label)e.Row.FindControl("lblSunPer");
@@ -1166,8 +623,8 @@ DROP TABLE #Final3
                 }
                 else
                 {
-                    SunRsv.Text = onhand.ToString();
-                    SunPer.Text = (onhand * 100 / Sun) + "%";
+                    SunRsv.Text = onhand.ToString("0.###");
+                    SunPer.Text = (onhand * 100 / Sun).ToString("0") + "%";
                     TTSURsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-2))/*org*/
@@ -1189,7 +646,7 @@ DROP TABLE #Final3
                         SunPer.Font.Bold = true;
                     }
                 }
-                int Mon = Convert.ToInt32(((Label)e.Row.FindControl("lblMonNeeded")).Text);
+                Decimal Mon = Convert.ToDecimal(((Label)e.Row.FindControl("lblMonNeeded")).Text);
                 Label MonNeeded = (Label)e.Row.FindControl("lblMonNeeded");
                 Label MonRsv = (Label)e.Row.FindControl("lblMonOnHand");
                 Label MonPer = (Label)e.Row.FindControl("lblMonPer");
@@ -1211,8 +668,8 @@ DROP TABLE #Final3
                 }
                 else
                 {
-                    MonRsv.Text = onhand.ToString();
-                    MonPer.Text = (onhand * 100 / Mon) + "%";
+                    MonRsv.Text = onhand.ToString("0.###");
+                    MonPer.Text = (onhand * 100 / Mon).ToString("0") + "%";
                     TTMRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-1))/*org*/
@@ -1234,7 +691,7 @@ DROP TABLE #Final3
                         MonPer.Font.Bold = true;
                     }
                 }
-                int Tue = Convert.ToInt32(((Label)e.Row.FindControl("lblTueNeeded")).Text);
+                Decimal Tue = Convert.ToDecimal(((Label)e.Row.FindControl("lblTueNeeded")).Text);
                 Label TueNeeded = (Label)e.Row.FindControl("lblTueNeeded");
                 Label TueRsv = (Label)e.Row.FindControl("lblTueOnHand");
                 Label TuePer = (Label)e.Row.FindControl("lblTuePer");
@@ -1256,8 +713,8 @@ DROP TABLE #Final3
                 }
                 else
                 {
-                    TueRsv.Text = onhand.ToString();
-                    TuePer.Text = (onhand * 100 / Tue) + "%";
+                    TueRsv.Text = onhand.ToString("0.###");
+                    TuePer.Text = (onhand * 100 / Tue).ToString("0") + "%";
                     TTTRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle)/*org*/
@@ -1279,7 +736,7 @@ DROP TABLE #Final3
                         TuePer.Font.Bold = true;
                     }
                 }
-                int Wed = Convert.ToInt32(((Label)e.Row.FindControl("lblWedNeeded")).Text);
+                Decimal Wed = Convert.ToDecimal(((Label)e.Row.FindControl("lblWedNeeded")).Text);
                 Label WedNeeded = (Label)e.Row.FindControl("lblWedNeeded");
                 Label WedRsv = (Label)e.Row.FindControl("lblWedOnHand");
                 Label WedPer = (Label)e.Row.FindControl("lblWedPer");
@@ -1301,8 +758,8 @@ DROP TABLE #Final3
                 }
                 else
                 {
-                    WedRsv.Text = onhand.ToString();
-                    WedPer.Text = (onhand * 100 / Wed) + "%";
+                    WedRsv.Text = onhand.ToString("0.###");
+                    WedPer.Text = (onhand * 100 / Wed).ToString("0") + "%";
                     TTWRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(1))/*org*/
@@ -1330,40 +787,40 @@ DROP TABLE #Final3
                 ((Label)e.Row.FindControl("lblTotalFriNeeded")).Text = TTFNeeded.ToString();
                 if(TTFNeeded != 0)
                 {
-                    ((Label)e.Row.FindControl("lblTotalFriRsv")).Text = TTFRsv.ToString();
-                    ((Label)e.Row.FindControl("lblTotalFriPer")).Text = (TTFRsv * 100) / TTFNeeded + "%";
+                    ((Label)e.Row.FindControl("lblTotalFriRsv")).Text = TTFRsv.ToString("0.###");
+                    ((Label)e.Row.FindControl("lblTotalFriPer")).Text = ((TTFRsv * 100) / TTFNeeded).ToString("0") + "%";
                 }
-                ((Label)e.Row.FindControl("lblTotalSatNeeded")).Text = TTSANeeded.ToString();
+                ((Label)e.Row.FindControl("lblTotalSatNeeded")).Text = TTSANeeded.ToString("0.###");
                 if (TTSANeeded != 0)
                 {
-                    ((Label)e.Row.FindControl("lblTotalSatRsv")).Text = TTSARsv.ToString();
-                    ((Label)e.Row.FindControl("lblTotalSatPer")).Text = (TTSARsv * 100) / TTSANeeded + "%";
+                    ((Label)e.Row.FindControl("lblTotalSatRsv")).Text = TTSARsv.ToString("0.###");
+                    ((Label)e.Row.FindControl("lblTotalSatPer")).Text = ((TTSARsv * 100) / TTSANeeded).ToString("0") + "%";
                 }
-                ((Label)e.Row.FindControl("lblTotalSunNeeded")).Text = TTSUNeeded.ToString();
+                ((Label)e.Row.FindControl("lblTotalSunNeeded")).Text = TTSUNeeded.ToString("0.###");
                 if (TTSUNeeded != 0)
                 {
-                    ((Label)e.Row.FindControl("lblTotalSunRsv")).Text = TTSURsv.ToString();
-                    ((Label)e.Row.FindControl("lblTotalSunPer")).Text = (TTSURsv * 100) / TTSUNeeded + "%";
+                    ((Label)e.Row.FindControl("lblTotalSunRsv")).Text = TTSURsv.ToString("0.###");
+                    ((Label)e.Row.FindControl("lblTotalSunPer")).Text = ((TTSURsv * 100) / TTSUNeeded).ToString("0") + "%";
                 }
-                ((Label)e.Row.FindControl("lblTotalMonNeeded")).Text = TTMNeeded.ToString();
+                ((Label)e.Row.FindControl("lblTotalMonNeeded")).Text = TTMNeeded.ToString("0.###");
                 if (TTMNeeded != 0)
                 {
-                    ((Label)e.Row.FindControl("lblTotalMonRsv")).Text = TTMRsv.ToString();
-                    ((Label)e.Row.FindControl("lblTotalMonPer")).Text = (TTMRsv * 100) / TTMNeeded + "%";
+                    ((Label)e.Row.FindControl("lblTotalMonRsv")).Text = TTMRsv.ToString("0.###");
+                    ((Label)e.Row.FindControl("lblTotalMonPer")).Text = ((TTMRsv * 100) / TTMNeeded).ToString("0") + "%";
                 }
-                ((Label)e.Row.FindControl("lblTotalTueNeeded")).Text = TTTNeeded.ToString();
+                ((Label)e.Row.FindControl("lblTotalTueNeeded")).Text = TTTNeeded.ToString("0.###");
                 if (TTTNeeded != 0)
                 {
-                    ((Label)e.Row.FindControl("lblTotalTueRsv")).Text = TTTRsv.ToString();
-                    ((Label)e.Row.FindControl("lblTotalTuePer")).Text = (TTTRsv * 100) / TTTNeeded + "%";
+                    ((Label)e.Row.FindControl("lblTotalTueRsv")).Text = TTTRsv.ToString("0.###");
+                    ((Label)e.Row.FindControl("lblTotalTuePer")).Text = ((TTTRsv * 100) / TTTNeeded).ToString("0") + "%";
                 }
-                ((Label)e.Row.FindControl("lblTotalWedNeeded")).Text = TTWNeeded.ToString();
+                ((Label)e.Row.FindControl("lblTotalWedNeeded")).Text = TTWNeeded.ToString("0.###");
                 if (TTWNeeded != 0)
                 {
-                    ((Label)e.Row.FindControl("lblTotalWedRsv")).Text = TTWRsv.ToString();
-                    ((Label)e.Row.FindControl("lblTotalWedPer")).Text = (TTWRsv * 100) / TTWNeeded + "%";
+                    ((Label)e.Row.FindControl("lblTotalWedRsv")).Text = TTWRsv.ToString("0.###");
+                    ((Label)e.Row.FindControl("lblTotalWedPer")).Text = ((TTWRsv * 100) / TTWNeeded).ToString("0") + "%";
                 }
-                ((Label)e.Row.FindControl("lblTotalDemand")).Text = TTDemand.ToString();
+                ((Label)e.Row.FindControl("lblTotalDemand")).Text = TTDemand.ToString("0.###");
 
             }
         }
