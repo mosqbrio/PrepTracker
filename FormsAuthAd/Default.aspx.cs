@@ -168,7 +168,7 @@ DECLARE @min_date Date
 DECLARE @max_date Date
 
 INSERT INTO @ORDER
-SELECT No_,'',0,[Shipment Date],SUM(Quantity),0,0
+SELECT No_,'',0,[Planned Shipment Date],SUM(Quantity),0,0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
 WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
 GROUP BY No_,[Shipment Date]
@@ -323,7 +323,7 @@ BEGIN
 	WHERE [Forecast Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location
 	GROUP BY [Item No_] UNION SELECT [No_],SUM(Quantity)'Qty'
 	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-	WHERE [Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+	WHERE [Planned Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
 	GROUP BY [No_])
 	INSERT INTO @ORDER
 	SELECT [Item No_],'',0,DATEADD(DAY, -4, @date),SUM(Qty),0,0 FROM OLD
