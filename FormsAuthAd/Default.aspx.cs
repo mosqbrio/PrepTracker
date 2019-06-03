@@ -170,13 +170,13 @@ DECLARE @max_date Date
 INSERT INTO @ORDER
 SELECT No_,'',0,[Planned Shipment Date],SUM(Quantity),0,0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
-GROUP BY No_,[Shipment Date]
+WHERE [Location Code]=@location AND [Planned Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+GROUP BY No_,[Planned Shipment Date]
 
     INSERT INTO @ORDER
 	SELECT [No_],'',0,DATEADD(DAY, -4, @date),SUM(Quantity),0,0
 	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-	WHERE [Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+	WHERE [Planned Shipment Date] < DATEADD(DAY, -4, @date) AND [Location Code]=@location AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
 	GROUP BY [No_]
 
 --EXPLORE THE BOM

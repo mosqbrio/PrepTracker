@@ -138,10 +138,10 @@ Processed bigint
 )
 
 INSERT INTO @ORDER
-SELECT No_,[Shipment Date],(CASE WHEN No_ LIKE 'K%' OR No_ LIKE 'Z%' THEN 1 ELSE 0 END),0
+SELECT No_,[Planned Shipment Date],(CASE WHEN No_ LIKE 'K%' OR No_ LIKE 'Z%' THEN 1 ELSE 0 END),0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
-GROUP BY No_,[Shipment Date]
+WHERE [Location Code]=@location AND [Planned Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+GROUP BY No_,[Planned Shipment Date]
 
 --EXPLORE THE BOM
 DECLARE @level int = 0
