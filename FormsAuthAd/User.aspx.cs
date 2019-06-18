@@ -225,13 +225,13 @@ namespace PrepTracker
                     LinkButton Delete = (LinkButton)e.Row.FindControl("LinkButton3");
                     Delete.Visible = false;
                 }
-                if (dddlDC.SelectedItem.ToString() == "WC")
+                if (dddlDC.SelectedItem.ToString() == "MW")
                 {
                     String LastLogin = e.Row.Cells[4].Text;
                     if (LastLogin != "&nbsp;")
                     {
                         DateTime last = Convert.ToDateTime(LastLogin);
-                        e.Row.Cells[4].Text = last.AddHours(-2).ToString();
+                        e.Row.Cells[4].Text = last.AddHours(+2).ToString();
                     }
                 }
                 else if (dddlDC.SelectedItem.ToString() == "EC")
@@ -240,7 +240,7 @@ namespace PrepTracker
                     if (LastLogin != "&nbsp;")
                     {
                         DateTime last = Convert.ToDateTime(LastLogin);
-                        e.Row.Cells[4].Text = last.AddHours(+1).ToString();
+                        e.Row.Cells[4].Text = last.AddHours(+3).ToString();
                     }
                 }
             }

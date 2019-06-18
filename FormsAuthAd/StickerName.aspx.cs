@@ -109,7 +109,7 @@ namespace PrepTracker
             }
             conn.Close();
         }
-        DataTable gdt = new DataTable();
+        //DataTable gdt = new DataTable();
         protected void GetData()
         {
             string sql = "";
@@ -297,12 +297,12 @@ GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
             DataTable dt = new DataTable();
             da.Fill(dt);
 
-            SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["PrepTrackerConnectionString1"].ConnectionString);
-            conn.Open();
-            SqlCommand cmmd = new SqlCommand("SELECT Meal, Sticker FROM [Operation].[dbo].[MealStickerName]", conn);
-            SqlDataAdapter gda = new SqlDataAdapter(cmmd);
-            gda.Fill(gdt);
-            conn.Close();
+            //SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["PrepTrackerConnectionString1"].ConnectionString);
+            //conn.Open();
+            //SqlCommand cmmd = new SqlCommand("SELECT Meal, Sticker FROM [Operation].[dbo].[MealStickerName]", conn);
+            //SqlDataAdapter gda = new SqlDataAdapter(cmmd);
+            //gda.Fill(gdt);
+            //conn.Close();
 
             GridView1.DataSource = dt;
             GridView1.DataBind();
@@ -326,20 +326,20 @@ GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
 
         protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
         {
-            if (e.Row.RowType == DataControlRowType.DataRow)
-            {
-                if(ddlItem.Text == "LEN(Item) = 4")
-                {
-                    string lblNo = ((Label)e.Row.FindControl("lblItem")).Text;
-                    DataView dv = new DataView(gdt);
-                    dv.RowFilter = "Meal ='" + lblNo + "'";
-                    if(dv.Count == 1)
-                    {
-                        Label stickername = (Label)e.Row.FindControl("lblSticker");
-                        stickername.Text = dv[0]["Sticker"].ToString();
-                    }
-                }
-            }
+            //if (e.Row.RowType == DataControlRowType.DataRow)
+            //{
+            //    if(ddlItem.Text == "LEN(Item) = 4")
+            //    {
+            //        string lblNo = ((Label)e.Row.FindControl("lblItem")).Text;
+            //        DataView dv = new DataView(gdt);
+            //        dv.RowFilter = "Meal ='" + lblNo + "'";
+            //        if(dv.Count == 1)
+            //        {
+            //            Label stickername = (Label)e.Row.FindControl("lblSticker");
+            //            stickername.Text = dv[0]["Sticker"].ToString();
+            //        }
+            //    }
+            //}
         }
     }
 }
