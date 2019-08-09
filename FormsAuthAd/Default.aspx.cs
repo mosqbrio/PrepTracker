@@ -5,8 +5,8 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Configuration;
 using System.Data.SqlClient;
+using System.Configuration;
 using DayPilot.Web.Ui;
 using System.Collections;
 using System.Data.Services.Client;
@@ -122,11 +122,11 @@ namespace PrepTracker
                 string fulfill = "";
                 if (cbFulfill.Checked == true)
                 {
-                    fulfill = "WHERE (z.Total-(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)-x.Total)<0";
+                    fulfill = "WHERE (z.Total-(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)-x.Total)<0 AND y.[Description] NOT LIKE 'Tray %'";
                 }
                 else
                 {
-                    fulfill = "";
+                    fulfill = "WHERE y.[Description] NOT LIKE 'Tray %'";
                 }
                 string sql = "";
                 if (DateTime.Today >= Convert.ToDateTime(ddlCycle.Text).AddDays(-4))
