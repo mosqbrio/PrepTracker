@@ -119,8 +119,17 @@ namespace PrepTracker
         {
             try
             {
+                string type = ddlItem.SelectedItem.ToString();
                 string fulfill = "";
-                if (cbFulfill.Checked == true)
+                if (cbFulfill.Checked == true && type == "Tray")
+                {
+                    fulfill = "WHERE (z.Total-(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)-x.Total)<0 AND y.[Description] LIKE 'Tray %'";
+                }
+                else if(cbFulfill.Checked != true && type == "Tray")
+                {
+                    fulfill = "WHERE y.[Description] LIKE 'Tray %'";
+                }
+                else if (cbFulfill.Checked == true)
                 {
                     fulfill = "WHERE (z.Total-(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)-x.Total)<0 AND y.[Description] NOT LIKE 'Tray %'";
                 }
@@ -128,6 +137,7 @@ namespace PrepTracker
                 {
                     fulfill = "WHERE y.[Description] NOT LIKE 'Tray %'";
                 }
+
                 string sql = "";
                 if (DateTime.Today >= Convert.ToDateTime(ddlCycle.Text).AddDays(-4))
                 {

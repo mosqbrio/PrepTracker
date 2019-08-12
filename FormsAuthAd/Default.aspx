@@ -125,7 +125,8 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                 <asp:ListItem Value="1%">DROP</asp:ListItem>
                 <asp:ListItem Value="2%">Sauce</asp:ListItem>
                 <asp:ListItem Value="4%">Cooked Sauce</asp:ListItem>
-                <asp:ListItem Value="6%">Meal</asp:ListItem>
+                <asp:ListItem Value="6%%">Tray</asp:ListItem>
+                <asp:ListItem Value="6%">Bag</asp:ListItem>
             </asp:DropDownList>
             <asp:Label ID="lblSource" runat="server"></asp:Label>
             <asp:CheckBox ID="cbFulfill" runat="server" AutoPostBack="true" OnCheckedChanged="CheckBox1_CheckedChanged" Text="Hide Fulfilled" />
