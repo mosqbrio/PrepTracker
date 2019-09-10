@@ -125,7 +125,7 @@ namespace PrepTracker
                 {
                     fulfill = "WHERE (z.Total-(CASE WHEN v.Qty IS NULL THEN 0 ELSE v.Qty END)-x.Total)<0 AND y.[Description] LIKE 'Tray %'";
                 }
-                else if(cbFulfill.Checked != true && type == "Tray")
+                else if (cbFulfill.Checked != true && type == "Tray")
                 {
                     fulfill = "WHERE y.[Description] LIKE 'Tray %'";
                 }
@@ -204,7 +204,7 @@ Begin
 	SELECT x.[No_],z.Parent,[Quantity per],z.Date,SUM([Quantity per]*Qty),(@level+1),0
 	FROM @STKU z
 	INNER JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x ON x.[Production BOM No_]=Item 
-	WHERE ((x.No_ LIKE '1%' AND Code!='TRAY' AND x.[Production BOM No_] NOT LIKE '2%' AND x.[Production BOM No_] NOT LIKE '3%' AND x.[Production BOM No_] NOT LIKE '4%') OR x.No_ LIKE '2%' OR x.No_ LIKE '3%' OR x.No_ LIKE '4%' OR x.No_ LIKE '6%' OR x.No_ LIKE '8%') 
+	WHERE ((x.No_ LIKE '1%' AND Code!='TRAY' AND x.[Production BOM No_] NOT LIKE '2%' AND x.[Production BOM No_] NOT LIKE '3%' AND x.[Production BOM No_] NOT LIKE '4%') OR (x.No_ NOT LIKE '1%' AND x.No_ LIKE '%')) 
 	AND ((x.[Starting Date]<=z.Date AND x.[Ending Date]>=z.Date) OR (x.[Starting Date]<=z.Date AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=z.Date))
 	GROUP BY x.No_,z.Parent,[Quantity per],z.Date
 	SET @level=@level+1
@@ -319,7 +319,7 @@ SELECT [Item No_],'',0,[Forecast Date],[Forecast Quantity],0,0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
 WHERE [Forecast Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND [Location Code]=@location
 
---INSERT OLD ORDER
+--INSERT PRE DEMAND
 IF GETDATE()>=DATEADD(DAY,-5,@date)
 	INSERT INTO @ORDER
 	SELECT [Item No_],'',0,DATEADD(DAY, -4, @date),SUM([Forecast Quantity]),0,0
@@ -355,7 +355,7 @@ Begin
 	SELECT x.[No_],z.Parent,[Quantity per],z.Date,SUM([Quantity per]*Qty),(@level+1),0
 	FROM @STKU z
 	INNER JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Production BOM Line] x ON x.[Production BOM No_]=Item 
-	WHERE ((x.No_ LIKE '1%' AND Code!='TRAY' AND x.[Production BOM No_] NOT LIKE '2%' AND x.[Production BOM No_] NOT LIKE '3%' AND x.[Production BOM No_] NOT LIKE '4%') OR x.No_ LIKE '2%' OR x.No_ LIKE '3%' OR x.No_ LIKE '4%' OR x.No_ LIKE '6%' OR x.No_ LIKE '8%') 
+	WHERE ((x.No_ LIKE '1%' AND Code!='TRAY' AND x.[Production BOM No_] NOT LIKE '2%' AND x.[Production BOM No_] NOT LIKE '3%' AND x.[Production BOM No_] NOT LIKE '4%') OR (x.No_ NOT LIKE '1%' AND x.No_ LIKE '%')) 
 	AND ((x.[Starting Date]<=z.Date AND x.[Ending Date]>=z.Date) OR (x.[Starting Date]<=z.Date AND x.[Ending Date]='1753-01-01') OR (x.[Starting Date]='1753-01-01' AND x.[Ending Date]>=z.Date))
 	GROUP BY x.No_,z.Parent,[Quantity per],z.Date
 	SET @level=@level+1
