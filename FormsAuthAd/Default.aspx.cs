@@ -447,25 +447,25 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
             
 
         }
-        decimal TTFNeeded = 0;
-        decimal TTFRsv = 0;
-        decimal TTSANeeded = 0;
-        decimal TTSARsv = 0;
-        decimal TTSUNeeded = 0;
-        decimal TTSURsv = 0;
-        decimal TTMNeeded = 0;
-        decimal TTMRsv = 0;
-        decimal TTTNeeded = 0;
-        decimal TTTRsv = 0;
-        decimal TTWNeeded = 0;
-        decimal TTWRsv = 0;
-        decimal TTDemand = 0;
+        //decimal TTFNeeded = 0;
+        //decimal TTFRsv = 0;
+        //decimal TTSANeeded = 0;
+        //decimal TTSARsv = 0;
+        //decimal TTSUNeeded = 0;
+        //decimal TTSURsv = 0;
+        //decimal TTMNeeded = 0;
+        //decimal TTMRsv = 0;
+        //decimal TTTNeeded = 0;
+        //decimal TTTRsv = 0;
+        //decimal TTWNeeded = 0;
+        //decimal TTWRsv = 0;
+        //decimal TTDemand = 0;
         protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
         {
             if (e.Row.RowType == DataControlRowType.DataRow)
             {
                 decimal Total = Convert.ToDecimal(((Label)e.Row.FindControl("lblTotal")).Text);
-                TTDemand += Total;
+                //TTDemand += Total;
                 decimal onprod = Convert.ToDecimal(((Label)e.Row.FindControl("lblInProd")).Text);
                 if (onprod < 0)
                 {
@@ -525,7 +525,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                 Label FriNeeded = (Label)e.Row.FindControl("lblFriNeeded");
                 Label FriRsv = (Label)e.Row.FindControl("lblFriOnHand");
                 Label FriPer = (Label)e.Row.FindControl("lblFriPer");
-                TTFNeeded += fri;
+                //TTFNeeded += fri;
                 if (fri == 0)
                 {
                     FriRsv.Text = "-";
@@ -539,13 +539,13 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     FriNeeded.ForeColor = green;
                     FriRsv.ForeColor = green;
                     FriPer.ForeColor = green;
-                    TTFRsv += fri;
+                    //TTFRsv += fri;
                 }
                 else
                 {
                     FriRsv.Text = onhand.ToString("0.###");
                     FriPer.Text = (onhand * 100 / fri).ToString("0") + "%";
-                    TTFRsv += onhand;
+                    //TTFRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-4))/*org*/
                     {
@@ -570,7 +570,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                 Label SatNeeded = (Label)e.Row.FindControl("lblSatNeeded");
                 Label SatRsv = (Label)e.Row.FindControl("lblSatOnHand");
                 Label SatPer = (Label)e.Row.FindControl("lblSatPer");
-                TTSANeeded += Sat;
+                //TTSANeeded += Sat;
                 if (Sat == 0)
                 {
                     SatRsv.Text = "-";
@@ -584,13 +584,13 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     SatNeeded.ForeColor = green;
                     SatRsv.ForeColor = green;
                     SatPer.ForeColor = green;
-                    TTSARsv += Sat;
+                    //TTSARsv += Sat;
                 }
                 else
                 {
                     SatRsv.Text = onhand.ToString("0.###");
                     SatPer.Text = (onhand * 100 / Sat).ToString("0") + "%";
-                    TTSARsv += onhand;
+                    //TTSARsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-3))/*org*/
                     {
@@ -615,7 +615,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                 Label SunNeeded = (Label)e.Row.FindControl("lblSunNeeded");
                 Label SunRsv = (Label)e.Row.FindControl("lblSunOnHand");
                 Label SunPer = (Label)e.Row.FindControl("lblSunPer");
-                TTSUNeeded += Sun;
+                //TTSUNeeded += Sun;
                 if (Sun == 0)
                 {
                     SunRsv.Text = "-";
@@ -629,13 +629,13 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     SunNeeded.ForeColor = green;
                     SunRsv.ForeColor = green;
                     SunPer.ForeColor = green;
-                    TTSURsv += Sun;
+                    //TTSURsv += Sun;
                 }
                 else
                 {
                     SunRsv.Text = onhand.ToString("0.###");
                     SunPer.Text = (onhand * 100 / Sun).ToString("0") + "%";
-                    TTSURsv += onhand;
+                    //TTSURsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-2))/*org*/
                     {
@@ -660,7 +660,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                 Label MonNeeded = (Label)e.Row.FindControl("lblMonNeeded");
                 Label MonRsv = (Label)e.Row.FindControl("lblMonOnHand");
                 Label MonPer = (Label)e.Row.FindControl("lblMonPer");
-                TTMNeeded += Mon;
+                //TTMNeeded += Mon;
                 if (Mon == 0)
                 {
                     MonRsv.Text = "-";
@@ -674,13 +674,13 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     MonNeeded.ForeColor = green;
                     MonRsv.ForeColor = green;
                     MonPer.ForeColor = green;
-                    TTMRsv += Mon;
+                    //TTMRsv += Mon;
                 }
                 else
                 {
                     MonRsv.Text = onhand.ToString("0.###");
                     MonPer.Text = (onhand * 100 / Mon).ToString("0") + "%";
-                    TTMRsv += onhand;
+                    //TTMRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(-1))/*org*/
                     {
@@ -705,7 +705,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                 Label TueNeeded = (Label)e.Row.FindControl("lblTueNeeded");
                 Label TueRsv = (Label)e.Row.FindControl("lblTueOnHand");
                 Label TuePer = (Label)e.Row.FindControl("lblTuePer");
-                TTTNeeded += Tue;
+                //TTTNeeded += Tue;
                 if (Tue == 0)
                 {
                     TueRsv.Text = "-";
@@ -719,13 +719,13 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     TueNeeded.ForeColor = green;
                     TueRsv.ForeColor = green;
                     TuePer.ForeColor = green;
-                    TTTRsv += Tue;
+                    //TTTRsv += Tue;
                 }
                 else
                 {
                     TueRsv.Text = onhand.ToString("0.###");
                     TuePer.Text = (onhand * 100 / Tue).ToString("0") + "%";
-                    TTTRsv += onhand;
+                    //TTTRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle)/*org*/
                     {
@@ -750,7 +750,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                 Label WedNeeded = (Label)e.Row.FindControl("lblWedNeeded");
                 Label WedRsv = (Label)e.Row.FindControl("lblWedOnHand");
                 Label WedPer = (Label)e.Row.FindControl("lblWedPer");
-                TTWNeeded += Wed;
+                //TTWNeeded += Wed;
                 if (Wed == 0)
                 {
                     WedRsv.Text = "-";
@@ -764,13 +764,13 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     WedNeeded.ForeColor = green;
                     WedRsv.ForeColor = green;
                     WedPer.ForeColor = green;
-                    TTWRsv += Wed;
+                    //TTWRsv += Wed;
                 }
                 else
                 {
                     WedRsv.Text = onhand.ToString("0.###");
                     WedPer.Text = (onhand * 100 / Wed).ToString("0") + "%";
-                    TTWRsv += onhand;
+                    //TTWRsv += onhand;
                     onhand = onhand - onhand;
                     if (DateTime.Today == cycle.AddDays(1))/*org*/
                     {
@@ -792,47 +792,47 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
                     }
                 }
             }
-            if (e.Row.RowType == DataControlRowType.Footer)
-            {
-                ((Label)e.Row.FindControl("lblTotalFriNeeded")).Text = TTFNeeded.ToString();
-                if(TTFNeeded != 0)
-                {
-                    ((Label)e.Row.FindControl("lblTotalFriRsv")).Text = TTFRsv.ToString("0.###");
-                    ((Label)e.Row.FindControl("lblTotalFriPer")).Text = ((TTFRsv * 100) / TTFNeeded).ToString("0") + "%";
-                }
-                ((Label)e.Row.FindControl("lblTotalSatNeeded")).Text = TTSANeeded.ToString("0.###");
-                if (TTSANeeded != 0)
-                {
-                    ((Label)e.Row.FindControl("lblTotalSatRsv")).Text = TTSARsv.ToString("0.###");
-                    ((Label)e.Row.FindControl("lblTotalSatPer")).Text = ((TTSARsv * 100) / TTSANeeded).ToString("0") + "%";
-                }
-                ((Label)e.Row.FindControl("lblTotalSunNeeded")).Text = TTSUNeeded.ToString("0.###");
-                if (TTSUNeeded != 0)
-                {
-                    ((Label)e.Row.FindControl("lblTotalSunRsv")).Text = TTSURsv.ToString("0.###");
-                    ((Label)e.Row.FindControl("lblTotalSunPer")).Text = ((TTSURsv * 100) / TTSUNeeded).ToString("0") + "%";
-                }
-                ((Label)e.Row.FindControl("lblTotalMonNeeded")).Text = TTMNeeded.ToString("0.###");
-                if (TTMNeeded != 0)
-                {
-                    ((Label)e.Row.FindControl("lblTotalMonRsv")).Text = TTMRsv.ToString("0.###");
-                    ((Label)e.Row.FindControl("lblTotalMonPer")).Text = ((TTMRsv * 100) / TTMNeeded).ToString("0") + "%";
-                }
-                ((Label)e.Row.FindControl("lblTotalTueNeeded")).Text = TTTNeeded.ToString("0.###");
-                if (TTTNeeded != 0)
-                {
-                    ((Label)e.Row.FindControl("lblTotalTueRsv")).Text = TTTRsv.ToString("0.###");
-                    ((Label)e.Row.FindControl("lblTotalTuePer")).Text = ((TTTRsv * 100) / TTTNeeded).ToString("0") + "%";
-                }
-                ((Label)e.Row.FindControl("lblTotalWedNeeded")).Text = TTWNeeded.ToString("0.###");
-                if (TTWNeeded != 0)
-                {
-                    ((Label)e.Row.FindControl("lblTotalWedRsv")).Text = TTWRsv.ToString("0.###");
-                    ((Label)e.Row.FindControl("lblTotalWedPer")).Text = ((TTWRsv * 100) / TTWNeeded).ToString("0") + "%";
-                }
-                ((Label)e.Row.FindControl("lblTotalDemand")).Text = TTDemand.ToString("0.###");
+            //if (e.Row.RowType == DataControlRowType.Footer)
+            //{
+            //    ((Label)e.Row.FindControl("lblTotalFriNeeded")).Text = TTFNeeded.ToString();
+            //    if(TTFNeeded != 0)
+            //    {
+            //        ((Label)e.Row.FindControl("lblTotalFriRsv")).Text = TTFRsv.ToString("0.###");
+            //        ((Label)e.Row.FindControl("lblTotalFriPer")).Text = ((TTFRsv * 100) / TTFNeeded).ToString("0") + "%";
+            //    }
+            //    ((Label)e.Row.FindControl("lblTotalSatNeeded")).Text = TTSANeeded.ToString("0.###");
+            //    if (TTSANeeded != 0)
+            //    {
+            //        ((Label)e.Row.FindControl("lblTotalSatRsv")).Text = TTSARsv.ToString("0.###");
+            //        ((Label)e.Row.FindControl("lblTotalSatPer")).Text = ((TTSARsv * 100) / TTSANeeded).ToString("0") + "%";
+            //    }
+            //    ((Label)e.Row.FindControl("lblTotalSunNeeded")).Text = TTSUNeeded.ToString("0.###");
+            //    if (TTSUNeeded != 0)
+            //    {
+            //        ((Label)e.Row.FindControl("lblTotalSunRsv")).Text = TTSURsv.ToString("0.###");
+            //        ((Label)e.Row.FindControl("lblTotalSunPer")).Text = ((TTSURsv * 100) / TTSUNeeded).ToString("0") + "%";
+            //    }
+            //    ((Label)e.Row.FindControl("lblTotalMonNeeded")).Text = TTMNeeded.ToString("0.###");
+            //    if (TTMNeeded != 0)
+            //    {
+            //        ((Label)e.Row.FindControl("lblTotalMonRsv")).Text = TTMRsv.ToString("0.###");
+            //        ((Label)e.Row.FindControl("lblTotalMonPer")).Text = ((TTMRsv * 100) / TTMNeeded).ToString("0") + "%";
+            //    }
+            //    ((Label)e.Row.FindControl("lblTotalTueNeeded")).Text = TTTNeeded.ToString("0.###");
+            //    if (TTTNeeded != 0)
+            //    {
+            //        ((Label)e.Row.FindControl("lblTotalTueRsv")).Text = TTTRsv.ToString("0.###");
+            //        ((Label)e.Row.FindControl("lblTotalTuePer")).Text = ((TTTRsv * 100) / TTTNeeded).ToString("0") + "%";
+            //    }
+            //    ((Label)e.Row.FindControl("lblTotalWedNeeded")).Text = TTWNeeded.ToString("0.###");
+            //    if (TTWNeeded != 0)
+            //    {
+            //        ((Label)e.Row.FindControl("lblTotalWedRsv")).Text = TTWRsv.ToString("0.###");
+            //        ((Label)e.Row.FindControl("lblTotalWedPer")).Text = ((TTWRsv * 100) / TTWNeeded).ToString("0") + "%";
+            //    }
+            //    ((Label)e.Row.FindControl("lblTotalDemand")).Text = TTDemand.ToString("0.###");
 
-            }
+            //}
         }
 
         protected void ddlCycle_SelectedIndexChanged(object sender, EventArgs e)

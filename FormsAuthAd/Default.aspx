@@ -73,7 +73,108 @@ function OnScrollDiv(Scrollablediv) {
   document.getElementById('DivHeaderRow').scrollLeft = Scrollablediv.scrollLeft;
 document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
 }
+function CalculateSum()
+  {
+    var FriDfields = document.getElementsByClassName('FriD');
+    var FriRfields = document.getElementsByClassName('FriR');
+    var SatDfields = document.getElementsByClassName('SatD');
+    var SatRfields = document.getElementsByClassName('SatR');
+    var SunDfields = document.getElementsByClassName('SunD');
+    var SunRfields = document.getElementsByClassName('SunR');
+    var MonDfields = document.getElementsByClassName('MonD');
+    var MonRfields = document.getElementsByClassName('MonR');
+    var TueDfields = document.getElementsByClassName('TueD');
+    var TueRfields = document.getElementsByClassName('TueR');
+    var WedDfields = document.getElementsByClassName('WedD');
+    var WedRfields = document.getElementsByClassName('WedR');
+    var TotalDfields = document.getElementsByClassName('TotalD');
+    
+    var FriDsum = 0, FriRsum = 0, SatDsum = 0, SatRsum = 0, SunDsum = 0, SunRsum = 0, MonDsum = 0, MonRsum = 0, TueDsum = 0, TueRsum = 0, WedDsum = 0, WedRsum = 0, TotalDsum = 0;
 
+    for (var i = 0; i < FriDfields.length; ++i) {
+        var item = FriDfields[i];
+        FriDsum += parseFloat(item.innerText);
+    }
+    for (var i = 0; i < FriRfields.length; ++i) {
+        var item = FriRfields[i];
+        if (item.innerText != '-')
+            FriRsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < SatDfields.length; ++i) {
+        var item = SatDfields[i];  
+         SatDsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < SatRfields.length; ++i) {
+        var item = SatRfields[i];  
+        if (item.innerText != '-')
+         SatRsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < SunDfields.length; ++i) {
+        var item = SunDfields[i];  
+         SunDsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < SunRfields.length; ++i) {
+        var item = SunRfields[i]; 
+        if (item.innerText != '-') 
+         SunRsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < MonDfields.length; ++i) {
+        var item = MonDfields[i];  
+         MonDsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < MonRfields.length; ++i) {
+        var item = MonRfields[i];  
+        if (item.innerText != '-')
+         MonRsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < TueDfields.length; ++i) {
+        var item = TueDfields[i];  
+         TueDsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < TueRfields.length; ++i) {
+        var item = TueRfields[i]; 
+        if (item.innerText != '-') 
+         TueRsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < WedDfields.length; ++i) {
+        var item = WedDfields[i];  
+         WedDsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < WedRfields.length; ++i) {
+        var item = WedRfields[i]; 
+        if (item.innerText != '-') 
+         WedRsum += parseInt(item.innerText);
+    }
+    for (var i = 0; i < TotalDfields.length; ++i) {
+        var item = TotalDfields[i];  
+         TotalDsum += parseInt(item.innerText);
+    }
+    $("#GridView1_lblTotalFriNeeded").text(FriDsum/2);
+    $("#GridView1_lblTotalFriRsv").text(FriRsum / 2);
+    if (FriDsum != 0)
+        $("#GridView1_lblTotalFriPer").text(((FriRsum / 2) / (FriDsum / 2) * 100).toFixed(0) + '%');
+    $("#GridView1_lblTotalSatNeeded").text(SatDsum/2);
+    $("#GridView1_lblTotalSatRsv").text(SatRsum / 2);
+    if (SatDsum != 0)
+        $("#GridView1_lblTotalSatPer").text(((SatRsum / 2) / (SatDsum / 2) * 100).toFixed(0) + '%');
+    $("#GridView1_lblTotalSunNeeded").text(SunDsum/2);
+    $("#GridView1_lblTotalSunRsv").text(SunRsum / 2);
+    if (SunDsum != 0)
+        $("#GridView1_lblTotalSunPer").text(((SunRsum / 2) / (SunDsum / 2) * 100).toFixed(0) + '%');
+    $("#GridView1_lblTotalMonNeeded").text(MonDsum/2);
+    $("#GridView1_lblTotalMonRsv").text(MonRsum / 2);
+    if (MonDsum != 0)
+        $("#GridView1_lblTotalMonPer").text(((MonRsum / 2) / (MonDsum / 2) * 100).toFixed(0) + '%');
+    $("#GridView1_lblTotalTueNeeded").text(TueDsum/2);
+    $("#GridView1_lblTotalTueRsv").text(TueRsum / 2);
+    if (TueDsum != 0)
+        $("#GridView1_lblTotalTuePer").text(((TueRsum / 2) / (TueDsum / 2) * 100).toFixed(0) + '%');
+    $("#GridView1_lblTotalWedNeeded").text(WedDsum/2);
+    $("#GridView1_lblTotalWedRsv").text(WedRsum / 2);
+    if (WedDsum != 0)
+        $("#GridView1_lblTotalWedPer").text(((WedRsum / 2) / (WedDsum / 2) * 100).toFixed(0) + '%');
+    $("#GridView1_lblTotalDemand").text(TotalDsum/2);
+  }
 
 </script>
 
@@ -166,6 +267,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <ItemTemplate>
                             <asp:Label runat="server" Text='<%# Eval("Fri", "{0:0.###}") %>' ID="lblFriNeeded"></asp:Label>
                         </ItemTemplate>
+                        <ItemStyle CssClass="FriD"></ItemStyle> 
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
                     </asp:TemplateField>
@@ -176,6 +278,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalFriRsv" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="FriR"></ItemStyle> 
                         <HeaderStyle Width="65px"></HeaderStyle><ItemStyle Width="65px"></ItemStyle>
                         <FooterStyle Width="65px" />
                     </asp:TemplateField>
@@ -196,6 +299,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalSatNeeded" runat="server"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="SatD"></ItemStyle> 
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
                     </asp:TemplateField>
@@ -206,6 +310,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalSatRsv" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="SatR"></ItemStyle> 
                         <HeaderStyle Width="65px"></HeaderStyle><ItemStyle Width="65px"></ItemStyle>
                         <FooterStyle Width="65px" />
                     </asp:TemplateField>
@@ -226,6 +331,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalSunNeeded" runat="server"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="SunD"></ItemStyle> 
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
                     </asp:TemplateField>
@@ -236,6 +342,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalSunRsv" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="SunR"></ItemStyle> 
                         <HeaderStyle Width="65px"></HeaderStyle><ItemStyle Width="65px"></ItemStyle>
                         <FooterStyle Width="65px" />
                     </asp:TemplateField>
@@ -256,6 +363,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalMonNeeded" runat="server"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="MonD"></ItemStyle> 
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
                     </asp:TemplateField>
@@ -266,6 +374,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalMonRsv" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="MonR"></ItemStyle> 
                         <HeaderStyle Width="65px"></HeaderStyle><ItemStyle Width="65px"></ItemStyle>
                         <FooterStyle Width="65px" />
                     </asp:TemplateField>
@@ -286,6 +395,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalTueNeeded" runat="server"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="TueD"></ItemStyle> 
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
                     </asp:TemplateField>
@@ -296,6 +406,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalTueRsv" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="TueR"></ItemStyle> 
                         <HeaderStyle Width="65px"></HeaderStyle><ItemStyle Width="65px"></ItemStyle>
                         <FooterStyle Width="65px" />
                     </asp:TemplateField>
@@ -316,6 +427,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalWedNeeded" runat="server"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="WedD"></ItemStyle> 
                         <HeaderStyle Width="57px"></HeaderStyle><ItemStyle Width="57px"></ItemStyle>
                         <FooterStyle Width="57px" />
                     </asp:TemplateField>
@@ -326,6 +438,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalWedRsv" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="WedR"></ItemStyle> 
                         <HeaderStyle Width="65px"></HeaderStyle><ItemStyle Width="65px"></ItemStyle>
                         <FooterStyle Width="65px" />
                     </asp:TemplateField>
@@ -334,7 +447,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                             <asp:Label runat="server" ID="lblWedPer" Text="-"></asp:Label>
                         </ItemTemplate>
                         <FooterTemplate>
-                            <asp:Label ID="lblTotalWedPer" runat="server"></asp:Label>
+                            <asp:Label ID="lblTotalWedPer" runat="server" Text="-"></asp:Label>
                         </FooterTemplate>
                         <HeaderStyle Width="42px"></HeaderStyle><ItemStyle Width="42px"></ItemStyle>
                         <FooterStyle Width="42px" />
@@ -346,6 +459,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         <FooterTemplate>
                             <asp:Label ID="lblTotalDemand" runat="server"></asp:Label>
                         </FooterTemplate>
+                        <ItemStyle CssClass="TotalD"></ItemStyle> 
                         <HeaderStyle Width="60px"></HeaderStyle><ItemStyle Width="60px"></ItemStyle>
                         <FooterStyle Width="60px" />
                     </asp:TemplateField>
@@ -392,6 +506,9 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
         </div>
         
     </form>
+    <script>
+        CalculateSum();
+    </script>
     <!-- Bootstrap core JavaScript -->
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
