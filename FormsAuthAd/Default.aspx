@@ -152,27 +152,27 @@ function CalculateSum()
     $("#GridView1_lblTotalFriNeeded").text(FriDsum/2);
     $("#GridView1_lblTotalFriRsv").text(FriRsum / 2);
     if (FriDsum != 0)
-        $("#GridView1_lblTotalFriPer").text(((FriRsum / 2) / (FriDsum / 2) * 100).toFixed(0) + '%');
+        $("#GridView1_lblTotalFriPer").text(Math.floor((FriRsum / 2) / (FriDsum / 2) * 100) + '%');
     $("#GridView1_lblTotalSatNeeded").text(SatDsum/2);
     $("#GridView1_lblTotalSatRsv").text(SatRsum / 2);
     if (SatDsum != 0)
-        $("#GridView1_lblTotalSatPer").text(((SatRsum / 2) / (SatDsum / 2) * 100).toFixed(0) + '%');
+        $("#GridView1_lblTotalSatPer").text(Math.floor((SatRsum / 2) / (SatDsum / 2) * 100) + '%');
     $("#GridView1_lblTotalSunNeeded").text(SunDsum/2);
     $("#GridView1_lblTotalSunRsv").text(SunRsum / 2);
     if (SunDsum != 0)
-        $("#GridView1_lblTotalSunPer").text(((SunRsum / 2) / (SunDsum / 2) * 100).toFixed(0) + '%');
+        $("#GridView1_lblTotalSunPer").text(Math.floor((SunRsum / 2) / (SunDsum / 2) * 100) + '%');
     $("#GridView1_lblTotalMonNeeded").text(MonDsum/2);
     $("#GridView1_lblTotalMonRsv").text(MonRsum / 2);
     if (MonDsum != 0)
-        $("#GridView1_lblTotalMonPer").text(((MonRsum / 2) / (MonDsum / 2) * 100).toFixed(0) + '%');
+        $("#GridView1_lblTotalMonPer").text(Math.floor((MonRsum / 2) / (MonDsum / 2) * 100) + '%');
     $("#GridView1_lblTotalTueNeeded").text(TueDsum/2);
     $("#GridView1_lblTotalTueRsv").text(TueRsum / 2);
     if (TueDsum != 0)
-        $("#GridView1_lblTotalTuePer").text(((TueRsum / 2) / (TueDsum / 2) * 100).toFixed(0) + '%');
+        $("#GridView1_lblTotalTuePer").text(Math.floor((TueRsum / 2) / (TueDsum / 2) * 100) + '%');
     $("#GridView1_lblTotalWedNeeded").text(WedDsum/2);
     $("#GridView1_lblTotalWedRsv").text(WedRsum / 2);
     if (WedDsum != 0)
-        $("#GridView1_lblTotalWedPer").text(((WedRsum / 2) / (WedDsum / 2) * 100).toFixed(0) + '%');
+        $("#GridView1_lblTotalWedPer").text(Math.floor((WedRsum / 2) / (WedDsum / 2) * 100) + '%');
     $("#GridView1_lblTotalDemand").text(TotalDsum/2);
   }
 
