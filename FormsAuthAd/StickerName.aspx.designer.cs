@@ -103,6 +103,15 @@ namespace PrepTracker {
         protected global::System.Web.UI.WebControls.Label lblSource;
         
         /// <summary>
+        /// ddlProductionDate control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlProductionDate;
+        
+        /// <summary>
         /// GridView1 control.
         /// </summary>
         /// <remarks>

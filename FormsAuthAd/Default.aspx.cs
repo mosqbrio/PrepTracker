@@ -115,6 +115,7 @@ namespace PrepTracker
             }
             conn.Close();
         }
+
         protected void GetData()
         {
             try
@@ -177,11 +178,29 @@ DECLARE @in_qty Decimal
 DECLARE @min_date Date
 DECLARE @max_date Date
 
+-- UNION WEB ORDERS AND SALES ORDERS; FILTER BY TYPE=ITEM
+;WITH orders(No_, Shipment_Date, Qty) AS (
+	SELECT No_,[Planned Shipment Date],SUM(Quantity) as Qty
+	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
+	WHERE [Location Code]=@location AND [Planned Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!='' and Type=2
+	GROUP BY No_,[Planned Shipment Date]
+
+	UNION ALL
+
+	SELECT No_, [Shipment Date], SUM(Quantity) as Qty
+	FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Sales Line]
+	WHERE [Location Code]=@location AND [Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) and Type=2
+	GROUP BY No_, [Shipment Date]
+)
+
 INSERT INTO @ORDER
-SELECT No_,'',0,[Planned Shipment Date],SUM(Quantity),0,0
-FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
-WHERE [Location Code]=@location AND [Planned Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
-GROUP BY No_,[Planned Shipment Date]
+SELECT No_,'', 0, Shipment_Date, SUM(Qty), 0, 0
+FROM orders
+GROUP BY No_, Shipment_Date
+--SELECT No_,'',0,[Planned Shipment Date],SUM(Quantity),0,0
+--FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
+--WHERE [Location Code]=@location AND [Planned Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
+--GROUP BY No_,[Planned Shipment Date]
 
     INSERT INTO @ORDER
 	SELECT [No_],'',0,DATEADD(DAY, -4, @date),SUM(Quantity),0,0
@@ -844,6 +863,7 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
         {
             GetData();
         }
+
         protected void GridView1_RowCreated(object sender, GridViewRowEventArgs e)
         {
             if (e.Row.RowType == DataControlRowType.Header)
@@ -907,10 +927,12 @@ GROUP BY x.Item,y.[Description],y.[Description 2],Fri,Sat,Sun,Mon,Tue,Wed,x.Tota
         {
             GetData();
         }
+
         protected void CheckBox1_CheckedChanged(object sender, EventArgs e)
         {
             GetData();
         }
+
         protected void btnRefresh_Click(object sender, EventArgs e)
         {
             GetData();

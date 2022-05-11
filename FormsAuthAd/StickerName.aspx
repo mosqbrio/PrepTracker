@@ -112,6 +112,7 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
 
         <!-- Page Content -->
         <div class="container containertop"><br />
+            <strong>CYCLE:</strong>
             <asp:DropDownList ID="ddlCycle" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlCycle_SelectedIndexChanged" >
             </asp:DropDownList>
             <asp:DropDownList ID="ddlDC" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlDC_SelectedIndexChanged">
@@ -122,17 +123,21 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                 <asp:ListItem Value="LEN(Item) != 4">Meal</asp:ListItem>
             </asp:DropDownList>
             <asp:Label ID="lblSource" runat="server"></asp:Label>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+            <strong>PRODUCTION DATE:</strong>
+            <asp:DropDownList ID="ddlProductionDate" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlProductionDate_SelectedIndexChanged">
+            </asp:DropDownList>
     <div id="DivRoot" align="left">
     <div style="overflow: hidden;" id="DivHeaderRow">
     </div>
     <div style="overflow-y:scroll;" onscroll="OnScrollDiv(this)" id="DivMainContent">
 
-            <asp:GridView ID="GridView1" style="font-size:15px" runat="server" AutoGenerateColumns="False" Width="100%" ShowFooter="false" BackColor="White" BorderColor="#DEDFDE" BorderStyle="None" BorderWidth="1px" CellPadding="4" ForeColor="Black" EmptyDataText="Fulfilled for this cycle!" OnRowDataBound="GridView1_RowDataBound">
+            <asp:GridView ID="GridView1" style="font-size:15px" runat="server" AutoGenerateColumns="False" Width="100%" BackColor="White" BorderColor="#DEDFDE" BorderStyle="None" BorderWidth="1px" CellPadding="4" ForeColor="Black" EmptyDataText="Fulfilled for this cycle!" OnRowDataBound="GridView1_RowDataBound">
                             <AlternatingRowStyle BackColor="#FFF0D2" ForeColor="#333333" />
                 <Columns>
-                    <asp:TemplateField HeaderText="Item" SortExpression="Item">
+                    <asp:TemplateField HeaderText="Item"  SortExpression="Item">
                         <ItemTemplate>
-                            <asp:Label runat="server" Text='<%# Bind("Item") %>' ID="lblItem"></asp:Label>
+                            <asp:HyperLink runat="server" Text='<%# Bind("Item") %>' NavigateUrl='<%# Eval("URL") %>' ID="lblItem"></asp:HyperLink>
                         </ItemTemplate>
                         <HeaderStyle Width="55px"></HeaderStyle>
                         <ItemStyle Width="55px"></ItemStyle>
@@ -166,6 +171,12 @@ document.getElementById('DivFooterRow').scrollLeft = Scrollablediv.scrollLeft;
                         </ItemTemplate>
                         <HeaderStyle Width="150px"></HeaderStyle><ItemStyle Width="150px"></ItemStyle>
                     </asp:TemplateField>
+                   <%-- <asp:TemplateField HeaderText="URL" SortExpression="URL">
+                        <ItemTemplate>
+                            <asp:HyperLink  runat="server" Text='<%# Eval("URL") %>' NavigateUrl='<%# Eval("URL","http://{0}") %>' ID="lblURL"></asp:HyperLink>
+                        </ItemTemplate>
+                        <HeaderStyle Width="150px"></HeaderStyle><ItemStyle Width="150px"></ItemStyle>
+                    </asp:TemplateField>--%>
                 </Columns>
 
                 <EditRowStyle BackColor="#9fed8e" />

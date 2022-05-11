@@ -103,6 +103,17 @@ namespace PrepTracker
                     ddlCycle.Items.Add(Cycle.AddDays(35).ToString("M/d/yyyy"));
                     ddlCycle.Items.Add(Cycle.AddDays(42).ToString("M/d/yyyy"));
                     ddlCycle.Text = Cycle.ToString("M/d/yyyy");
+
+                    ddlProductionDate.Items.Clear();
+                    ddlProductionDate.Items.Add(Cycle.AddDays(-5).ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.AddDays(-4).ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.AddDays(-3).ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.AddDays(-2).ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.AddDays(-1).ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.AddDays(1).ToString("M/d/yyyy"));
+                    ddlProductionDate.Items.Add(Cycle.AddDays(2).ToString("M/d/yyyy"));
+
                     GetData();
                 }
 
@@ -117,7 +128,8 @@ namespace PrepTracker
             {
                 lblSource.Text = "Source: Web Order";
                 sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
-                                DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
+DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
+DECLARE @productionDate DATE = '" + ddlProductionDate.Text + @"'
 DECLARE @ORDER TABLE(
 Item varchar(25),
 Date Date,
@@ -138,7 +150,8 @@ Processed bigint
 )
 
 INSERT INTO @ORDER
-SELECT No_,[Planned Shipment Date],(CASE WHEN No_ LIKE 'K%' OR No_ LIKE 'Z%' THEN 1 ELSE 0 END),0
+--SELECT No_,[Planned Shipment Date],(CASE WHEN No_ LIKE 'K%' OR No_ LIKE 'Z%' THEN 1 ELSE 0 END),0
+SELECT No_,[Planned Shipment Date],(CASE WHEN No_ LIKE 'K%' OR No_ LIKE 'Z%' OR No_ LIKE 'J%' THEN 1 ELSE 0 END),0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Web Order Line]
 WHERE [Location Code]=@location AND [Planned Shipment Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND No_!='WELCOME_BOOKLET' AND No_!='FREIGHT' AND No_!='MENU_BOOKLET' AND No_!=''
 GROUP BY No_,[Planned Shipment Date]
@@ -169,9 +182,19 @@ DELETE FROM @ORDER WHERE Item LIKE '8%' OR " + ddlItem.Text + @"
 
 ;WITH ITEMEXP AS(SELECT Item,MAX(Exp)'EXP' FROM @ORDER GROUP BY Item)
 INSERT INTO @Final
-SELECT Item,(CASE WHEN EXP=1 AND Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) ELSE '' END),[Allergen Code],0
-FROM ITEMEXP
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item
+--SELECT Item,(CASE WHEN EXP=1 AND Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) ELSE '' END),[Allergen Code],0
+--FROM ITEMEXP
+--LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item
+SELECT f.Item,(CASE WHEN EXP=1 AND f.Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) 
+                    WHEN EXP=1 AND i.[Item Category Code]='TRAY' and s.[Shelf Life]!='' THEN CONVERT(VARCHAR(10), DATEADD(DAY,1*LEFT([Shelf Life],LEN([Shelf Life])-1),'" + ddlProductionDate.Text + @"' ), 101)
+                    WHEN EXP=1 AND i.[Item Category Code]='TRAY' and s.[Shelf Life]='' THEN CONVERT(VARCHAR(10), DATEADD(DAY,7,'" + ddlProductionDate.Text + @"' ), 101)
+                    ELSE '' 
+              END),
+	   a.[Allergen Code],0
+FROM ITEMEXP f
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] a ON a.[Item No_]=f.Item COLLATE DATABASE_DEFAULT
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] i ON i.No_=f.Item  COLLATE DATABASE_DEFAULT
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] s ON s.[Item No_]=f.Item COLLATE DATABASE_DEFAULT and s.[Location Code]=@location  COLLATE DATABASE_DEFAULT
 
 DECLARE @item VARCHAR(25)
 DECLARE @expdate VARCHAR(10)
@@ -197,16 +220,25 @@ BEGIN
 	END
 END
 
-SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp
+--SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp
+--FROM @Final x
+--LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
+--GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp
+
+SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp, v.Value URL
 FROM @Final x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
-GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.Item COLLATE DATABASE_DEFAULT 
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Attribute Value Mapping] m on x.Item=m.No_ COLLATE DATABASE_DEFAULT
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Attribute] a on m.[Item Attribute ID]=a.ID
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Attribute Value] v on m.[Item Attribute Value ID]=v.ID  and a.Name='Sticker_URL'
+GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp, v.Value";
             }
             else
             {
                 lblSource.Text = "Source: Forecast";
                 sql = @"DECLARE @date Date = '" + ddlCycle.Text + @"' 
-                                DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
+DECLARE @location VARCHAR(5) = '" + ddlDC.Text + @"'
+DECLARE @productionDate DATE = '" + ddlProductionDate.Text + @"'
 DECLARE @ORDER TABLE(
 Item varchar(25),
 Date Date,
@@ -227,7 +259,8 @@ Processed bigint
 )
 
 INSERT INTO @ORDER
-SELECT [Item No_],[Forecast Date],(CASE WHEN [Item No_] LIKE 'K%' OR [Item No_] LIKE 'Z%' THEN 1 ELSE 0 END),0
+--SELECT [Item No_],[Forecast Date],(CASE WHEN [Item No_] LIKE 'K%' OR [Item No_] LIKE 'Z%' THEN 1 ELSE 0 END),0
+SELECT [Item No_],[Forecast Date],(CASE WHEN [Item No_] LIKE 'K%' OR [Item No_] LIKE 'Z%' OR [Item No_] LIKE 'J%'  THEN 1 ELSE 0 END),0
 FROM [SUNBASKET_1000_TEST].[dbo].[Receiving$Production Forecast Entry]
 WHERE [Forecast Date] BETWEEN DATEADD(DAY, -3, @date) AND DATEADD(DAY, +2, @date) AND [Location Code]=@location
 
@@ -257,9 +290,19 @@ DELETE FROM @ORDER WHERE Item LIKE '8%' OR " + ddlItem.Text + @"
 
 ;WITH ITEMEXP AS(SELECT Item,MAX(Exp)'EXP' FROM @ORDER GROUP BY Item)
 INSERT INTO @Final
-SELECT Item,(CASE WHEN EXP=1 AND Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) ELSE '' END),[Allergen Code],0
-FROM ITEMEXP
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item
+--SELECT Item,(CASE WHEN EXP=1 AND Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) ELSE '' END),[Allergen Code],0
+--FROM ITEMEXP
+--LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] ON [Item No_]=Item
+SELECT f.Item,(CASE WHEN EXP=1 AND f.Item LIKE '3%' THEN CONVERT(VARCHAR(10), DATEADD(DAY,8,@date), 101) 
+                    WHEN EXP=1 AND i.[Item Category Code]='TRAY' and s.[Shelf Life]!='' THEN CONVERT(VARCHAR(10), DATEADD(DAY,1*LEFT([Shelf Life],LEN([Shelf Life])-1),'" + ddlProductionDate.Text + @"' ), 101)
+                    WHEN EXP=1 AND i.[Item Category Code]='TRAY' and s.[Shelf Life]='' THEN CONVERT(VARCHAR(10), DATEADD(DAY,7,'" + ddlProductionDate.Text + @"' ), 101)
+                    ELSE '' 
+              END),
+	   a.[Allergen Code],0
+FROM ITEMEXP f
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Allergen] a ON a.[Item No_]=f.Item COLLATE DATABASE_DEFAULT
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] i ON i.No_=f.Item  COLLATE DATABASE_DEFAULT
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Stockkeeping Unit] s ON s.[Item No_]=f.Item COLLATE DATABASE_DEFAULT and s.[Location Code]=@location  COLLATE DATABASE_DEFAULT
 
 DECLARE @item VARCHAR(25)
 DECLARE @expdate VARCHAR(10)
@@ -285,10 +328,18 @@ BEGIN
 	END
 END
 
-SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp
+--SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp
+--FROM @Final x
+--LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
+--GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp
+
+SELECT Item,([Description]+[Description 2])'Decpt',[Sticker Name]'StickerName','Contains: ' + STUFF((SELECT ', ' + CAST(Allergen AS VARCHAR(80)) AS [text()] FROM @Final y WHERE y.Item=x.Item FOR XML PATH('')), 1, 2, NULL)'Allergen',Exp, v.Value URL
 FROM @Final x
-LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] ON No_=Item COLLATE DATABASE_DEFAULT 
-GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item] y ON y.No_=x.Item COLLATE DATABASE_DEFAULT 
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Attribute Value Mapping] m on x.Item=m.No_ COLLATE DATABASE_DEFAULT
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Attribute] a on m.[Item Attribute ID]=a.ID
+LEFT JOIN [SUNBASKET_1000_TEST].[dbo].[Receiving$Item Attribute Value] v on m.[Item Attribute Value ID]=v.ID  and a.Name='Sticker_URL'
+GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp, v.Value";
             }
             SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["PrepTrackerConnectionString2"].ConnectionString);
             con.Open();
@@ -313,6 +364,15 @@ GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
 
         protected void ddlCycle_SelectedIndexChanged(object sender, EventArgs e)
         {
+            ddlProductionDate.Items.Clear();
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).AddDays(-4).ToString("M/d/yyyy"));
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).AddDays(-3).ToString("M/d/yyyy"));
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).AddDays(-2).ToString("M/d/yyyy"));
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).AddDays(-1).ToString("M/d/yyyy"));
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).ToString("M/d/yyyy"));
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).AddDays(1).ToString("M/d/yyyy"));
+            ddlProductionDate.Items.Add(Convert.ToDateTime(ddlCycle.Text).AddDays(2).ToString("M/d/yyyy"));
+
             GetData();
         }
         protected void ddlDC_SelectedIndexChanged(object sender, EventArgs e)
@@ -320,6 +380,11 @@ GROUP BY Item,[Sticker Name],[Description],[Description 2],Exp";
             GetData();
         }
         protected void ddlItem_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            GetData();
+        }
+
+        protected void ddlProductionDate_SelectedIndexChanged(object sender, EventArgs e)
         {
             GetData();
         }
